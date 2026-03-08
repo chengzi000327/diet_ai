@@ -1,0 +1,4053 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>饮食库填充页面</title>
+    <style>
+      :root {
+        /* macOS-like palette */
+        --bg: #ececec;
+        --window: rgba(255, 255, 255, 0.78);
+        --surface: rgba(255, 255, 255, 0.92);
+        --text: #1f2937;
+        --muted: #6b7280;
+        --border: rgba(31, 41, 55, 0.12);
+        --border-soft: rgba(31, 41, 55, 0.08);
+        --shadow: 0 18px 50px rgba(0, 0, 0, 0.12);
+        --accent: #0a84ff; /* macOS blue */
+        --accent-soft: rgba(10, 132, 255, 0.14);
+        --radius: 14px;
+        /* 全站字号更适配网页/大屏（会随屏幕略微自适应） */
+        --font: clamp(15px, 0.35vw + 13px, 17px);
+        --font-sm: clamp(14px, 0.30vw + 12px, 16px);
+        --font-xs: clamp(13px, 0.25vw + 11px, 15px);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", ui-sans-serif,
+          system-ui, Segoe UI, Roboto, PingFang SC, Microsoft YaHei, Arial;
+        background: radial-gradient(1200px 700px at 20% 0%, rgba(10,132,255,0.16), transparent 62%),
+                    radial-gradient(900px 500px at 86% 12%, rgba(0,0,0,0.06), transparent 58%),
+                    linear-gradient(180deg, #f3f3f3 0%, #eaeaea 100%);
+        color: var(--text);
+        min-height: 100vh;
+        display: grid;
+        place-items: start center;
+        padding: 18px;
+        font-size: var(--font);
+      }
+
+      .window {
+        width: 100%;
+        max-width: 100%;
+        background: var(--window);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        backdrop-filter: blur(18px);
+      }
+
+      .titlebar {
+        height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 14px;
+        border-bottom: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.56));
+      }
+      .traffic {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .dot { width: 12px; height: 12px; border-radius: 999px; border: 1px solid rgba(0,0,0,0.12); }
+      .dot.red { background: #ff5f57; }
+      .dot.yellow { background: #febc2e; }
+      .dot.green { background: #28c840; }
+      .title {
+        font-weight: 650;
+        font-size: 15px;
+        letter-spacing: 0.2px;
+        color: rgba(31, 41, 55, 0.9);
+        user-select: none;
+      }
+      .sub {
+        margin-left: auto;
+        font-size: var(--font-sm);
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 56%;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border-soft);
+        background: rgba(255, 255, 255, 0.55);
+        flex-wrap: wrap;
+      }
+      .group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+      .spacer { flex: 1; }
+
+      /* 控件 */
+      label { display: none; }
+      select, input {
+        height: 38px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.92);
+        color: var(--text);
+        outline: none;
+        font-size: var(--font);
+      }
+      input { width: min(520px, 52vw); }
+      select { min-width: 220px; }
+      input:focus, select:focus {
+        border-color: rgba(10, 132, 255, 0.45);
+        box-shadow: 0 0 0 4px var(--accent-soft);
+      }
+      button {
+        height: 38px;
+        padding: 0 12px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(245,245,245,0.92));
+        color: rgba(31,41,55,0.92);
+        cursor: pointer;
+        font-size: var(--font);
+      }
+      button:hover { background: linear-gradient(180deg, rgba(255,255,255,1), rgba(240,240,240,0.95)); }
+      button.primary {
+        background: linear-gradient(180deg, rgba(10,132,255,0.16), rgba(10,132,255,0.08));
+        border-color: rgba(10,132,255,0.35);
+      }
+      button.primary:hover {
+        background: linear-gradient(180deg, rgba(10,132,255,0.22), rgba(10,132,255,0.12));
+      }
+      button.danger {
+        border-color: rgba(239,68,68,0.35);
+        background: rgba(239,68,68,0.10);
+        color: rgba(153,27,27,1);
+      }
+
+      .content {
+        padding: 12px 14px 16px;
+        background: rgba(255, 255, 255, 0.42);
+      }
+
+      .meta {
+        margin-top: 6px;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        color: var(--muted);
+        font-size: var(--font-sm);
+      }
+      .table-wrap {
+        margin-top: 12px;
+        overflow: auto;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.75);
+        max-height: min(520px, 62vh);
+      }
+      table { border-collapse: collapse; width: 100%; min-width: 960px; }
+      thead th {
+        position: sticky;
+        top: 0;
+        background: rgba(255, 255, 255, 0.94);
+        backdrop-filter: blur(6px);
+        color: var(--muted);
+        font-weight: 600;
+        font-size: var(--font-sm);
+        text-align: left;
+        padding: 10px 10px;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+      }
+      tbody td {
+        padding: 10px 10px;
+        border-bottom: 1px solid rgba(31,41,55,0.06);
+        font-size: var(--font-sm);
+        vertical-align: top;
+        white-space: nowrap;
+      }
+      tbody tr:hover td { background: rgba(10,132,255,0.06); }
+      .pager {
+        margin-top: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+      .pager .btns { display: flex; gap: 8px; }
+      .error { color: #b91c1c; font-size: 12px; margin-top: 10px; white-space: pre-wrap; }
+      .error { color: #b91c1c; font-size: var(--font-sm); margin-top: 10px; white-space: pre-wrap; }
+      .hint { color: var(--muted); font-size: var(--font-sm); margin-top: 8px; }
+      .auto-merge-card {
+        margin-top: 10px;
+        padding: 10px 12px;
+        border: 1px solid var(--border-soft);
+        border-radius: 14px;
+        background: #f5f5f7;
+      }
+      .auto-merge-top {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .auto-merge-controls {
+        margin-top: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding: 8px 10px;
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        background: rgba(255,255,255,0.92);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+      }
+      .am-label {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--muted);
+        font-size: var(--font-sm);
+      }
+      .am-check {
+        width: 14px;
+        height: 14px;
+        accent-color: #007aff;
+      }
+      code { color: #1d4ed8; }
+
+      /* 结果表：列宽更稳定（避免挤成一坨） */
+      #wrap_result table { min-width: 1180px; }
+      /* 列顺序（注意：第 1 列是勾选框）：[勾选, id, all_names, units, nutrition, 合并状态, 数据来源, 版本, 备注] */
+      #wrap_result th:nth-child(1), #wrap_result td:nth-child(1) { width: 44px; }   /* 勾选 */
+      #wrap_result th:nth-child(2), #wrap_result td:nth-child(2) { width: 140px; }  /* id */
+      #wrap_result th:nth-child(3), #wrap_result td:nth-child(3) { width: 260px; }  /* all_names */
+      #wrap_result th:nth-child(4), #wrap_result td:nth-child(4) { width: 260px; }  /* units */
+      #wrap_result th:nth-child(5), #wrap_result td:nth-child(5) { width: 260px; }  /* nutrition */
+      #wrap_result th:nth-child(6), #wrap_result td:nth-child(6) { width: 120px; }  /* 合并状态 */
+      #wrap_result th:nth-child(7), #wrap_result td:nth-child(7) { width: 110px; }  /* 数据来源 */
+      #wrap_result th:nth-child(8), #wrap_result td:nth-child(8) { width: 130px; }  /* 版本 */
+      #wrap_result th:nth-child(9), #wrap_result td:nth-child(9) { width: 260px; }  /* 备注 */
+      /* 让 id / all_names 不贴太近：加额外 padding + 分隔线 */
+      #wrap_result th:nth-child(2), #wrap_result td:nth-child(2) { padding-right: 18px; }
+      #wrap_result th:nth-child(3), #wrap_result td:nth-child(3) {
+        padding-left: 18px;
+        border-left: 1px solid rgba(31, 41, 55, 0.08);
+      }
+
+      /* 响应式适配 */
+      @media (max-width: 980px) {
+        body { padding: 12px; }
+        .sub { display: none; }
+        input { width: 100%; min-width: 240px; }
+        .toolbar .spacer { display: none; }
+        .toolbar { gap: 8px; }
+        button { white-space: nowrap; }
+        table { min-width: 860px; }
+      }
+      @media (max-width: 640px) {
+        .titlebar { padding: 0 10px; }
+        .content { padding: 10px 10px 12px; }
+        .panel-header { flex-wrap: wrap; }
+        .panel-actions { width: 100%; justify-content: flex-end; }
+        #wrap_result table { min-width: 980px; }
+      }
+
+      /* 三表布局 */
+      .panels { display: flex; flex-direction: column; gap: 12px; }
+      .panel {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: rgba(255,255,255,0.55);
+        overflow: hidden;
+      }
+      .panel-header {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border-soft);
+        background: rgba(255,255,255,0.6);
+      }
+      .panel-title { font-weight: 650; }
+      .panel-sub { color: var(--muted); font-size: var(--font-sm); margin-left: 6px; }
+      .panel-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+      .last-merge-tip {
+        color: var(--muted);
+        font-size: var(--font-sm);
+        white-space: nowrap;
+        max-width: 320px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .mini { height: 30px; padding: 0 10px; border-radius: 10px; font-size: var(--font-sm); }
+      .mini-input { height: 30px; padding: 6px 10px; border-radius: 10px; font-size: var(--font-sm); width: 220px; }
+      .pill {
+        height: 30px;
+        padding: 0 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.75);
+        color: rgba(31,41,55,0.92);
+        cursor: pointer;
+        font-size: var(--font-sm);
+      }
+      .pill.on {
+        border-color: rgba(10,132,255,0.35);
+        background: rgba(10,132,255,0.10);
+      }
+
+      .json-cell {
+        max-width: 560px;
+      }
+      .json-details summary {
+        cursor: pointer;
+        color: rgba(31,41,55,0.88);
+        font-size: 13px;
+        list-style: none;
+      }
+      .json-details summary::-webkit-details-marker { display: none; }
+      .json-details summary .hint {
+        display: inline-block;
+        margin-left: 6px;
+        color: rgba(107,114,128,0.95);
+        font-size: 12px;
+      }
+      .json-pre {
+        margin-top: 8px;
+        padding: 10px 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(31,41,55,0.10);
+        background: rgba(255,255,255,0.82);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+        line-height: 1.4;
+        max-height: 220px;
+        overflow: auto;
+      }
+      .lines { display: flex; flex-direction: column; gap: 6px; }
+      .line {
+        padding: 6px 8px;
+        border-radius: 8px;
+        border: 1px solid rgba(31,41,55,0.08);
+        background: rgba(255,255,255,0.75);
+        word-break: break-word;
+      }
+      .unit-item {
+        padding: 8px 8px;
+        border-radius: 10px;
+        border: 1px solid rgba(31,41,55,0.10);
+        background: rgba(255,255,255,0.75);
+      }
+      .unit-item .k { color: rgba(107,114,128,0.95); font-size: 12px; }
+      .unit-item .v { margin-top: 2px; }
+      .kv { display: grid; grid-template-columns: 160px 1fr; gap: 6px 10px; align-items: baseline; }
+      .kv .k { color: rgba(107,114,128,0.95); font-size: 12px; }
+      .kv .v { word-break: break-word; }
+
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 26px;
+        padding: 0 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(31,41,55,0.12);
+        font-size: 12px;
+        font-weight: 650;
+        white-space: nowrap;
+        min-width: 88px; /* 统一“已合并/待更新单位/待合并”视觉宽度 */
+      }
+      .status-pill.ok { border-color: rgba(16,185,129,0.35); background: rgba(16,185,129,0.10); color: rgba(6,95,70,1); }
+      .status-pill.warn { border-color: rgba(245,158,11,0.40); background: rgba(245,158,11,0.10); color: rgba(146,64,14,1); }
+      .status-pill.todo { border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.10); color: rgba(153,27,27,1); }
+      .status-pill.nutri { border-color: rgba(139,92,246,0.35); background: rgba(139,92,246,0.10); color: rgba(91,33,182,1); }
+
+      /* 结果表更像日志视图：更舒服的间距 + 斑马纹 */
+      #wrap_result table { table-layout: fixed; }
+      #wrap_result th, #wrap_result td { padding: 12px 10px; }
+      #wrap_result tbody tr:nth-child(odd) td { background: rgba(255,255,255,0.35); }
+      #wrap_result tbody tr:hover td { background: rgba(10,132,255,0.06); }
+      /* 当前选中的 food（用于写入 nutrition） */
+      #wrap_result tbody tr.row-active td { background: rgba(59, 130, 246, 0.08) !important; }
+
+      /* OR 搜索：更接近 macOS 的小控件 */
+      .or-pill{
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 8px;
+        height: 28px;
+        border: 1px solid rgba(31,41,55,0.14);
+        border-radius: 10px;
+        background: rgba(255,255,255,0.72);
+        font-size: 12px;
+        color: rgba(31,41,55,0.92);
+        user-select: none;
+      }
+      .or-pill input#orToggle{
+        width: 16px;
+        height: 16px;
+        accent-color: rgba(10,132,255,0.95);
+        margin: 0;
+      }
+      .or-pill span{ line-height: 1; }
+      .badge-select {
+        height: 26px;
+        padding: 0 8px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.9);
+        font-size: 12px;
+        width: 88px;
+        min-width: 88px;   /* 覆盖全局 select { min-width: 220px; } */
+        max-width: 88px;
+      }
+      .badge-select.human { border-color: rgba(16,185,129,0.35); background: rgba(16,185,129,0.10); }
+      .badge-select.model { border-color: rgba(139,92,246,0.35); background: rgba(139,92,246,0.10); }
+      .badge-select.auto { border-color: rgba(59,130,246,0.35); background: rgba(59,130,246,0.10); }
+
+      /* 圆形勾选 */
+      input.circle {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 16px; height: 16px;
+        border-radius: 999px;
+        border: 1.5px solid rgba(31,41,55,0.35);
+        background: rgba(255,255,255,0.9);
+        display: inline-grid;
+        place-items: center;
+        cursor: pointer;
+      }
+      input.circle:checked {
+        border-color: rgba(10,132,255,0.65);
+        box-shadow: 0 0 0 4px rgba(10,132,255,0.12);
+        background: rgba(10,132,255,0.18);
+      }
+      input.circle:checked::after {
+        content: "";
+        width: 8px; height: 8px;
+        border-radius: 999px;
+        background: rgba(10,132,255,0.95);
+      }
+
+      /* modal */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.25);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+      }
+      .modal {
+        width: min(1100px, 96vw);
+        background: rgba(255,255,255,0.95);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .modal .hd {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border-soft);
+        font-weight: 700;
+      }
+      .modal .bd {
+        padding: 12px 14px;
+        max-height: 76vh;
+        overflow: auto; /* 内容过高时滚动弹窗整体（不让单位表格单独滚动） */
+      }
+      /* 合并弹窗：单位表格不单独滚动 */
+      #mergeModalBackdrop .table-wrap {
+        max-height: none;
+        overflow: visible;
+      }
+      .modal .ft {
+        padding: 12px 14px;
+        border-top: 1px solid var(--border-soft);
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+      .kvs { display: grid; grid-template-columns: 140px 1fr; gap: 10px 12px; align-items: center; }
+      .k { color: var(--muted); font-size: var(--font-sm); }
+      .v { font-size: var(--font-sm); }
+      .version-checklist {
+        max-height: 260px;
+        overflow: auto;
+        border: 1px solid var(--border-soft);
+        border-radius: 10px;
+        background: rgba(255,255,255,0.6);
+        padding: 8px;
+      }
+      .version-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 4px;
+      }
+      .version-item input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+      }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    </style>
+  </head>
+  <body>
+    <div class="window">
+      <div class="titlebar">
+        <div class="traffic" aria-hidden="true">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+        </div>
+        <div class="title">饮食库填充页面</div>
+        <div class="sub" id="workbookInfo">加载中…</div>
+      </div>
+
+      <div class="toolbar">
+        <div class="group">
+          <input id="qInput" placeholder="搜索（支持多关键词）例如：烧麦 烧卖" />
+          <label class="or-pill">
+            <input id="orToggle" type="checkbox" />
+            <span>OR 搜索</span>
+          </label>
+          <button id="refreshBtn">搜索/刷新</button>
+          <button id="undo1Btn" class="mini">撤回</button>
+          <button id="undo3Btn" class="mini">撤回3步</button>
+        </div>
+        <div class="spacer"></div>
+        <div class="group">
+          <button id="exportFinalBtn" class="primary">导出 最终JSONL</button>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="panels">
+          <!-- Panel 1 -->
+          <div class="panel" id="panel_map">
+            <div class="panel-header">
+              <div class="panel-title">食物库（合并总表：单位 + 营养素）</div>
+              <div class="panel-sub" id="meta_map">—</div>
+              <div class="panel-actions">
+                <button id="view_result" class="pill on" title="查看合并后的结构化结果">合并结果</button>
+                <span id="last_merge_tip" class="last-merge-tip">上一次合并：—</span>
+                <button id="filterBtn" class="pill" title="筛选：数据来源 / 版本 / 合并状态">筛选</button>
+                <button id="mergeBtn" class="mini primary">合并选中</button>
+                <button id="autoMergeRunBtn" class="mini">自动合并</button>
+                <button id="resetBtn" class="mini">还原选中</button>
+                <button id="resetByNameBtn" class="mini">还原指定</button>
+                <button id="clearSelBtn" class="mini">清空勾选</button>
+                <select id="limit_map" class="mini" title="每页条数">
+            <option value="25">25</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+          </select>
+                <button id="prev_map" class="mini">上一页</button>
+                <button id="next_map" class="mini">下一页</button>
+        </div>
+        </div>
+            <div class="table-wrap" id="wrap_result">
+              <table>
+                <thead><tr id="thead_result"></tr></thead>
+                <tbody id="tbody_result"></tbody>
+              </table>
+      </div>
+            <div class="hint" style="padding: 10px 12px;">
+              数据源：优先使用环境变量 <code>WORKBOOK_PATH</code>；未设置时自动读取项目根目录的 <code>标准食物库参考数据0206.xlsx</code>。
+              行标识字段：<code>_row</code>（用于勾选/合并）。
+            </div>
+            <div id="unitMergeBox" style="padding: 0 12px 12px;"></div>
+            <div id="autoMergeBox" style="padding: 0 12px 12px;"></div>
+        </div>
+
+          <!-- Panel 3 -->
+          <div class="panel" id="panel_cns">
+            <div class="panel-header">
+              <div class="panel-title">中国营养学会参考数据</div>
+              <div class="panel-sub" id="meta_cns">—</div>
+              <div class="panel-actions">
+                <button id="cnsUpdateBtn" class="mini primary">一键更新 nutrition</button>
+                <button id="cnsClearBtn" class="mini">清空勾选</button>
+                <select id="limit_cns" class="mini" title="每页条数">
+                  <option value="25" selected>25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+                <button id="prev_cns" class="mini">上一页</button>
+                <button id="next_cns" class="mini">下一页</button>
+              </div>
+            </div>
+        <div class="table-wrap">
+          <table>
+                <thead><tr id="thead_cns"></tr></thead>
+                <tbody id="tbody_cns"></tbody>
+          </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="error" id="error"></div>
+          </div>
+    </div>
+
+    <!-- Merge modal -->
+    <div class="modal-backdrop" id="mergeModalBackdrop">
+      <div class="modal">
+        <div class="hd">合并选中食物（生成 id + 别名 + 单位）</div>
+        <div class="bd">
+          <div class="kvs">
+            <input type="hidden" id="modal_merge_id" value="" />
+            <div class="k">id</div>
+            <div class="v"><input id="modal_primary" style="width:100%;" placeholder="例如：米饭" /></div>
+            <div class="k">将作为别名</div>
+            <div class="v" id="modal_aliases">—</div>
+            <div class="k">提示</div>
+            <div class="v" style="color: var(--muted);">
+              合并后会把这些行的单位按 <code>unit</code> 合并，并预填“转换成g”（策略），并用公式计算 <code>100_grams_per_unit = g/100</code>。
+            </div>
+          </div>
+          <div style="margin-top:12px;">
+            <div style="display:flex; align-items:center; gap:10px; margin: 0 0 8px 0;">
+              <div class="hint" style="margin:0;">合并后的单位（可修改“转换成g”）：</div>
+              <div style="margin-left:auto; display:flex; gap:8px;">
+                <button id="modal_units_add" class="mini">新增单位</button>
+                <button id="modal_units_fill" class="mini">按策略预填</button>
+              </div>
+            </div>
+            <div class="table-wrap" style="margin-top:0; max-height: 260px;">
+              <table style="min-width: 760px;">
+                <thead>
+                  <tr>
+                    <th>单位</th>
+                    <th>单位别名</th>
+                    <th>转换成g</th>
+                    <th>100_grams_per_unit (=g/100)</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="modal_units_tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="ft">
+          <button id="modal_cancel">取消</button>
+          <button class="primary" id="modal_ok">确认合并</button>
+        </div>
+          </div>
+        </div>
+
+    <!-- Filter modal -->
+    <div class="modal-backdrop" id="filterModalBackdrop">
+      <div class="modal">
+        <div class="hd">筛选（合并结果）</div>
+        <div class="bd">
+          <div class="kvs">
+            <div class="k">合并状态</div>
+            <div class="v">
+              <select id="filter_status" style="width:100%;">
+                <option value="">全部</option>
+                <option value="已合并">已合并</option>
+                <option value="待更新单位">待更新单位</option>
+                <option value="营养成分未填">营养成分未填</option>
+                <option value="待合并">待合并</option>
+              </select>
+            </div>
+            <div class="k">数据来源</div>
+            <div class="v">
+              <select id="filter_source" style="width:100%;">
+                <option value="">全部</option>
+                <option value="人工">人工</option>
+                <option value="模型">模型</option>
+                <option value="自动">自动</option>
+              </select>
+            </div>
+            <div class="k">版本（包含）</div>
+            <div class="v"><input id="filter_version" style="width:100%;" placeholder="例如：260130" /></div>
+          </div>
+          <div class="hint" style="margin-top:10px;">
+            说明：筛选在“合并结果”视图生效；版本来自原始表/合并信息；数据来源可在表格里改。
+          </div>
+        </div>
+        <div class="ft">
+          <button id="filter_clear">清空</button>
+          <button id="filter_cancel">取消</button>
+          <button class="primary" id="filter_apply">应用</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export modal -->
+    <div class="modal-backdrop" id="exportModalBackdrop">
+      <div class="modal">
+        <div class="hd">导出 JSONL（选择版本）</div>
+        <div class="bd">
+          <div style="display:flex; gap:8px; margin-bottom:8px;">
+            <button id="export_ver_all" class="mini">全选</button>
+            <button id="export_ver_clear" class="mini">清空</button>
+          </div>
+          <div id="export_ver_list" class="version-checklist"></div>
+          <div class="hint" style="margin-top:10px;">
+            可多选版本；“空版本”表示 version 为空的记录。
+          </div>
+        </div>
+        <div class="ft">
+          <button id="export_cancel">取消</button>
+          <button class="primary" id="export_apply">导出</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const SHEETS = {
+        map: "食物库-单位映射系数",
+        cns: "中国营养学会参考数据",
+      };
+
+      const LS_KEY = "food_merge_state_v1";
+      const LS_UNDO_KEY = "food_merge_undo_v1";
+      const LS_REDO_KEY = "food_merge_redo_v1";
+
+      const NUTRITION_SHEET = "食物库-标准单位（100g）";
+      // 为了 UI 不太宽，先展示核心 5 列；导出会带全量 nutrition
+      const NUT_COLS_DISPLAY = [
+        "能量(kcal/100g)",
+        "蛋白质(Protein)/g",
+        "脂肪(Fat)/g",
+        "碳水化合物(CHO)/g",
+        "水分(Water)/g",
+      ];
+
+      let state = {
+        q: "",
+        q_mode: "and", // and | or
+        workbook: "",
+        sheets: {
+          map: { name: SHEETS.map, offset: 0, limit: 50, total: 0, columns: [], rows: [] },
+          cns: { name: SHEETS.cns, offset: 0, limit: 25, total: 0, columns: [], rows: [] },
+        },
+        foods_all_q: null,
+        foods_all: null, // Array<{food_name, aliases, units, 版本, 备注, 核验状态, _rows}>
+        foods_view: { offset: 0, limit: 50, total: 0 }, // filtered paging
+        selection_map: new Set(), // Set<number> of _row
+        selection_foods: new Set(), // Set<food_name> for result table merge
+        selection_cns: new Set(), // Set<number> of _row (中国营养学会参考数据)
+        filters: { status: "", source: "", version: "" },
+        auto_merge: {
+          pending: [],
+          last_auto_applied: [],
+          preview_report: null,
+          run_report: null,
+          blocked_group_sigs: [],
+          params: { t_high: 0.86, t_low: 0.70, writeback_excel: false, auto_apply_pending: true, merge_by_id_only: true, pair_filter: "all", pair_conf_min: 0, pair_conf_max: 1 },
+        },
+        merge: loadMergeState(),
+        active_group_id: null,
+        active_food_name: "", // 当前在“食物库结果表”点击的 food_name（用于写入 nutrition）
+        nutrition_cache: {}, // { [food_name]: { found: boolean, row: object|null } }
+        nutrition_overrides: {}, // { [food_name]: nutritionObject } 优先级高于 nutrition_cache
+        hidden_foods: new Set(), // Set<food_name>：被合并进其它 food 的条目，从结果表隐藏
+      };
+
+      // 从 localStorage 恢复 filters
+      state.filters = state.merge.filters || state.filters;
+      state.nutrition_overrides = state.merge.nutrition_overrides || state.nutrition_overrides;
+      state.hidden_foods = new Set((state.merge.hidden_foods || []).map((x) => normText(x)).filter(Boolean));
+      state.q_mode = (state.merge.q_mode === "or" ? "or" : "and");
+      state.auto_merge = state.merge.auto_merge || state.auto_merge;
+
+      function setError(msg) { $("error").textContent = msg || ""; }
+
+      async function fetchJSON(url, init) {
+        const r = await fetch(url, init);
+        if (!r.ok) {
+          const t = await r.text();
+          throw new Error(`${r.status} ${r.statusText}\n${t}`);
+        }
+        return await r.json();
+      }
+
+      async function suggestUnitsByModel({ food_name, all_names, units }) {
+        return await fetchJSON("/api/units/suggest_model", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ food_name, all_names, units }),
+        });
+      }
+
+      async function suggestAutoMerge(payload) {
+        return await fetchJSON("/api/merge/suggest_or_apply", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload || {}),
+        });
+      }
+
+      async function matchOrInferNutrition(payload) {
+        return await fetchJSON("/api/nutrition/match_or_infer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload || {}),
+        });
+      }
+
+      async function ensureFoodsAllLoaded() {
+        // 关键：foods 必须全量加载一次，然后在前端按“合并后的 all_names/units”等信息做搜索；
+        // 否则用户用合并后新增的别名搜索（比如“袁记云饺”）会出现 0 条，误以为“饺子丢了”。
+        if (Array.isArray(state.foods_all) && state.foods_all.length) return;
+        state.foods_all = [];
+
+        const limit = 200; // 与后端 /api/foods 约束一致（le=200）
+        let offset = 0;
+        for (;;) {
+          const qs = encodeQS({ offset, limit });
+          const data = await fetchJSON(`/api/foods?${qs}`);
+          const items = data.foods || [];
+          state.foods_all.push(...items);
+          const total = Number(data.total || 0);
+          if (offset + limit >= total) break;
+          offset += limit;
+        }
+
+        // 建立顺序索引（用于“饺子之前”的规则）
+        state.foods_index = new Map();
+        for (let i = 0; i < state.foods_all.length; i++) {
+          state.foods_index.set(normText(state.foods_all[i]?.food_name), i);
+        }
+        state.jiaozi_boundary = findJiaoziBoundaryIndex(state.foods_all);
+      }
+
+      function encodeQS(params) {
+        const usp = new URLSearchParams();
+        Object.entries(params).forEach(([k, v]) => {
+          if (v === undefined || v === null || v === "") return;
+          usp.set(k, String(v));
+        });
+        return usp.toString();
+      }
+
+      function pad6(n) { return String(n).padStart(6, "0"); }
+
+      function loadMergeState() {
+        try {
+          const raw = localStorage.getItem(LS_KEY);
+          if (!raw) return { next_id: 1, groups: [], filters: { status: "", source: "", version: "" }, hidden_foods: [], q_mode: "and", last_merge: { primary: "", id: "", at: "" }, auto_merge: { pending: [], last_auto_applied: [], preview_report: null, run_report: null, blocked_group_sigs: [], params: { t_high: 0.86, t_low: 0.70, writeback_excel: false, auto_apply_pending: true, merge_by_id_only: true, pair_filter: "all", pair_conf_min: 0, pair_conf_max: 1 } } };
+          const obj = JSON.parse(raw);
+          if (!obj || typeof obj !== "object") return { next_id: 1, groups: [], filters: { status: "", source: "", version: "" }, hidden_foods: [], q_mode: "and", last_merge: { primary: "", id: "", at: "" }, auto_merge: { pending: [], last_auto_applied: [], preview_report: null, run_report: null, blocked_group_sigs: [], params: { t_high: 0.86, t_low: 0.70, writeback_excel: false, auto_apply_pending: true, merge_by_id_only: true, pair_filter: "all", pair_conf_min: 0, pair_conf_max: 1 } } };
+          // 兼容旧数据：把 00001 -> 000001
+          const groups = Array.isArray(obj.groups) ? obj.groups : [];
+          const migrated = groups.map((g) => {
+            if (!g || typeof g !== "object") return g;
+            const id = String(g.id || "");
+            const id2 = id && id.length < 6 ? id.padStart(6, "0") : id;
+            return { ...g, id: id2 };
+          });
+          const filters = obj.filters && typeof obj.filters === "object" ? obj.filters : {};
+          return {
+            next_id: Number(obj.next_id || 1),
+            groups: migrated,
+            filters: {
+              status: String(filters.status || ""),
+              source: String(filters.source || ""),
+              version: String(filters.version || ""),
+            },
+            hidden_foods: Array.isArray(obj.hidden_foods) ? obj.hidden_foods : [],
+            q_mode: (String(obj.q_mode || "and").toLowerCase() === "or" ? "or" : "and"),
+            last_merge: obj.last_merge && typeof obj.last_merge === "object"
+              ? {
+                  primary: String(obj.last_merge.primary || ""),
+                  id: String(obj.last_merge.id || ""),
+                  at: String(obj.last_merge.at || ""),
+                }
+              : { primary: "", id: "", at: "" },
+            auto_merge: obj.auto_merge && typeof obj.auto_merge === "object"
+              ? {
+                  pending: Array.isArray(obj.auto_merge.pending) ? obj.auto_merge.pending : [],
+                  last_auto_applied: Array.isArray(obj.auto_merge.last_auto_applied) ? obj.auto_merge.last_auto_applied : [],
+                  preview_report: obj.auto_merge.preview_report && typeof obj.auto_merge.preview_report === "object"
+                    ? obj.auto_merge.preview_report
+                    : null,
+                  run_report: obj.auto_merge.run_report && typeof obj.auto_merge.run_report === "object"
+                    ? obj.auto_merge.run_report
+                    : null,
+                  blocked_group_sigs: Array.isArray(obj.auto_merge.blocked_group_sigs) ? obj.auto_merge.blocked_group_sigs.map((x) => String(x || "")) : [],
+                  params: {
+                    t_high: Number(obj.auto_merge?.params?.t_high || 0.86),
+                    t_low: Number(obj.auto_merge?.params?.t_low || 0.70),
+                    writeback_excel: !!obj.auto_merge?.params?.writeback_excel,
+                    auto_apply_pending: obj.auto_merge?.params?.auto_apply_pending !== false,
+                    merge_by_id_only: obj.auto_merge?.params?.merge_by_id_only !== false,
+                    pair_filter: ["all", "auto", "pending", "reject"].includes(String(obj.auto_merge?.params?.pair_filter || "all"))
+                      ? String(obj.auto_merge?.params?.pair_filter || "all")
+                      : "all",
+                    pair_conf_min: Math.max(0, Math.min(1, Number(obj.auto_merge?.params?.pair_conf_min ?? 0))),
+                    pair_conf_max: Math.max(0, Math.min(1, Number(obj.auto_merge?.params?.pair_conf_max ?? 1))),
+                  },
+                }
+              : { pending: [], last_auto_applied: [], preview_report: null, run_report: null, blocked_group_sigs: [], params: { t_high: 0.86, t_low: 0.70, writeback_excel: false, auto_apply_pending: true, merge_by_id_only: true, pair_filter: "all", pair_conf_min: 0, pair_conf_max: 1 } },
+          };
+        } catch {
+          return { next_id: 1, groups: [], filters: { status: "", source: "", version: "" }, hidden_foods: [], q_mode: "and", last_merge: { primary: "", id: "", at: "" }, auto_merge: { pending: [], last_auto_applied: [], preview_report: null, run_report: null, blocked_group_sigs: [], params: { t_high: 0.86, t_low: 0.70, writeback_excel: false, auto_apply_pending: true, merge_by_id_only: true, pair_filter: "all", pair_conf_min: 0, pair_conf_max: 1 } } };
+        }
+      }
+
+      function renderLastMergeTip(currentPrimary = "") {
+        const el = $("last_merge_tip");
+        if (!el) return;
+        const lm = state.merge?.last_merge || {};
+        const p = normText(lm.primary || "");
+        const id = String(lm.id || "").trim();
+        const at = String(lm.at || "").trim();
+        if (!p) {
+          el.textContent = "上一次合并：—";
+          return;
+        }
+        let timeText = "";
+        if (at) {
+          try {
+            timeText = `，时间：${new Date(at).toLocaleString()}`;
+          } catch {}
+        }
+        const same = currentPrimary && normText(currentPrimary) === p ? "（与本次相同）" : "";
+        el.textContent = `上一次合并到：${p}${id ? `（组 ${id}）` : ""}${same}${timeText}`;
+      }
+
+      function _getStack(key) {
+        try {
+          const raw = localStorage.getItem(key);
+          const arr = raw ? JSON.parse(raw) : [];
+          return Array.isArray(arr) ? arr : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function _setStack(key, arr) {
+        const v = Array.isArray(arr) ? arr : [];
+        try {
+          localStorage.setItem(key, JSON.stringify(v));
+        } catch {
+          // localStorage 配额不足时，优先保留最近记录
+          const keep = v.slice(-10);
+          try { localStorage.setItem(key, JSON.stringify(keep)); } catch {}
+        }
+      }
+
+      function _pushUndoEntry(entry) {
+        const undo = _getStack(LS_UNDO_KEY);
+        undo.push(entry);
+        // cap
+        while (undo.length > 50) undo.shift();
+        _setStack(LS_UNDO_KEY, undo);
+        // 新操作产生后，redo 清空
+        _setStack(LS_REDO_KEY, []);
+      }
+
+      function _saveStateRawToLS(raw) {
+        localStorage.setItem(LS_KEY, raw);
+      }
+
+      function _compactCandidatePairs(xs, limit = 120) {
+        const arr = Array.isArray(xs) ? xs : [];
+        return arr.slice(0, limit);
+      }
+
+      function _compactAutoMergeForStorage(am) {
+        const x = (am && typeof am === "object") ? am : {};
+        const compactReport = (r) => {
+          if (!r || typeof r !== "object") return null;
+          return {
+            ...r,
+            candidate_pairs_detail: _compactCandidatePairs(r.candidate_pairs_detail, 120),
+            applied_groups: Array.isArray(r.applied_groups) ? r.applied_groups.slice(0, 80) : r.applied_groups,
+            failed_groups: Array.isArray(r.failed_groups) ? r.failed_groups.slice(0, 80) : r.failed_groups,
+          };
+        };
+        return {
+          ...x,
+          preview_report: compactReport(x.preview_report),
+          run_report: compactReport(x.run_report),
+        };
+      }
+
+      function _serializeCurrentState() {
+        return JSON.stringify({
+          ...state.merge,
+          filters: state.filters,
+          auto_merge: _compactAutoMergeForStorage(state.auto_merge),
+          nutrition_overrides: state.nutrition_overrides,
+          hidden_foods: Array.from(state.hidden_foods || []),
+          q_mode: state.q_mode || "and",
+        });
+      }
+
+      function saveMergeState(pushUndo = false) {
+        if (pushUndo) {
+          const prev = localStorage.getItem(LS_KEY);
+          if (prev) _pushUndoEntry(prev);
+        }
+        const raw = _serializeCurrentState();
+        try {
+          localStorage.setItem(LS_KEY, raw);
+        } catch {
+          // 超配额时，先缩减 undo/redo，再重试一次
+          try { _setStack(LS_UNDO_KEY, _getStack(LS_UNDO_KEY).slice(-5)); } catch {}
+          try { _setStack(LS_REDO_KEY, _getStack(LS_REDO_KEY).slice(-5)); } catch {}
+          try {
+            localStorage.setItem(LS_KEY, raw);
+          } catch {
+            // 最后兜底：丢弃大报告字段后写入，避免阻塞主流程（如 Excel 写回）
+            try {
+              const fallback = JSON.stringify({
+                ...state.merge,
+                filters: state.filters,
+                auto_merge: { ...(state.auto_merge || {}), preview_report: null, run_report: null },
+                nutrition_overrides: state.nutrition_overrides,
+                hidden_foods: Array.from(state.hidden_foods || []),
+                q_mode: state.q_mode || "and",
+              });
+              localStorage.setItem(LS_KEY, fallback);
+            } catch {}
+          }
+        }
+      }
+
+      async function undoSteps(n) {
+        const steps = Math.max(1, Number(n || 1));
+        for (let i = 0; i < steps; i++) {
+          const undo = _getStack(LS_UNDO_KEY);
+          if (!undo.length) break;
+          const entry = undo.pop();
+          _setStack(LS_UNDO_KEY, undo);
+
+          // Complex undo: restore excel backup + restore previous state in one step
+          if (typeof entry === "string" && entry.startsWith("__COMPLEX__:")) {
+            try {
+              const payload = JSON.parse(entry.slice("__COMPLEX__:".length));
+              const prevState = String(payload?.state || "");
+              const backup_id = String(payload?.excel_backup_id || "");
+              const cur = localStorage.getItem(LS_KEY);
+              if (cur) {
+                const redo = _getStack(LS_REDO_KEY);
+                redo.push(cur);
+                while (redo.length > 50) redo.shift();
+                _setStack(LS_REDO_KEY, redo);
+              }
+              if (backup_id) {
+                await fetchJSON("/api/workbook/restore", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ backup_id }),
+                });
+              }
+              if (prevState) _saveStateRawToLS(prevState);
+            } catch (e) {
+              setError(`撤回失败：${String(e?.message || e)}`);
+              return;
+            }
+            continue;
+          }
+
+          // Excel restore marker
+          if (typeof entry === "string" && entry.startsWith("__EXCEL__RESTORE__:")) {
+            const backup_id = entry.slice("__EXCEL__RESTORE__:".length);
+            try {
+              await fetchJSON("/api/workbook/restore", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ backup_id }),
+              });
+            } catch (e) {
+              setError(`撤回失败（Excel还原失败）：${String(e?.message || e)}`);
+              return;
+            }
+            continue;
+          }
+
+          const cur = localStorage.getItem(LS_KEY);
+          if (cur) {
+            const redo = _getStack(LS_REDO_KEY);
+            redo.push(cur);
+            while (redo.length > 50) redo.shift();
+            _setStack(LS_REDO_KEY, redo);
+          }
+          _saveStateRawToLS(String(entry || ""));
+        }
+
+        // rehydrate state from LS
+        state.merge = loadMergeState();
+        state.filters = state.merge.filters || state.filters;
+        state.nutrition_overrides = state.merge.nutrition_overrides || state.nutrition_overrides;
+        state.hidden_foods = new Set((state.merge.hidden_foods || []).map((x) => normText(x)).filter(Boolean));
+        state.q_mode = (state.merge.q_mode === "or" ? "or" : "and");
+        state.auto_merge = state.merge.auto_merge || state.auto_merge;
+        const orToggle = $("orToggle");
+        if (orToggle) orToggle.checked = state.q_mode === "or";
+
+        await refreshAll();
+        setError("已撤回操作");
+        setTimeout(() => { if (($("error")?.textContent || "") === "已撤回操作") setError(""); }, 1200);
+      }
+
+      function findGroupByRow(rowNum) {
+        for (const g of state.merge.groups) {
+          if (g && Array.isArray(g.row_ids) && g.row_ids.includes(rowNum)) return g;
+        }
+        return null;
+      }
+
+      function normText(s) {
+        // 去掉常见“看不见”的空白（不间断空格/全角空格），并 trim
+        return String(s || "")
+          .replace(/[\u00a0\u3000]/g, " ")
+          .trim();
+      }
+
+      function splitAliases(s) {
+        const t = normText(s);
+        if (!t) return [];
+        // 支持常见分隔符，但“括号内的逗号/顿号”不切分（如：米饭（蒸，代表值））
+        const out = [];
+        let cur = "";
+        let depth = 0;
+        const isSep = (ch) => /[，,、;；/|\\\n\t]/.test(ch);
+        for (const ch of t) {
+          if (ch === "(" || ch === "（" || ch === "[" || ch === "【") {
+            depth += 1;
+            cur += ch;
+            continue;
+          }
+          if (ch === ")" || ch === "）" || ch === "]" || ch === "】") {
+            if (depth > 0) depth -= 1;
+            cur += ch;
+            continue;
+          }
+          if (depth === 0 && isSep(ch)) {
+            const v = cur.trim();
+            if (v) out.push(v);
+            cur = "";
+            continue;
+          }
+          cur += ch;
+        }
+        const last = cur.trim();
+        if (last) out.push(last);
+        return out;
+      }
+
+      function splitKeywords(q) {
+        const t = normText(q).toLowerCase();
+        if (!t) return [];
+        // 与后端一致：空格/逗号/顿号/分号/斜杠/竖线/tab 都算分隔
+        return t.split(/[,\s、;/\t|]+/g).map((x) => x.trim()).filter(Boolean);
+      }
+
+      function splitNameList(s) {
+        const t = normText(s);
+        if (!t) return [];
+        return t.split(/[,\s、;/\t|]+/g).map((x) => normText(x)).filter(Boolean);
+      }
+
+      function matchKeywords(text, keywords) {
+        if (!keywords || !keywords.length) return true;
+        const tl = String(text || "").toLowerCase();
+        if (state.q_mode === "or") return keywords.some((k) => k && tl.includes(k));
+        return keywords.every((k) => k && tl.includes(k));
+      }
+
+      async function getNutritionRowByName(foodName) {
+        const name = normText(foodName);
+        if (!name) return null;
+        if (state.nutrition_cache[name]) return state.nutrition_cache[name].row;
+
+        const qs = encodeQS({ sheet: NUTRITION_SHEET, q: name, offset: 0, limit: 50 });
+        const data = await fetchJSON(`/api/sheet?${qs}`);
+        const rows = data.rows || [];
+        let picked = rows.find((r) => normText(r.food_name) === name) || null;
+        // 兜底：contains 搜索可能命中很多，取第一条
+        if (!picked && rows.length) picked = rows[0];
+        state.nutrition_cache[name] = { found: !!picked, row: picked };
+        return picked;
+      }
+
+      async function prefetchNutritionForGroups(groups) {
+        const names = [];
+        for (const g of groups || []) {
+          if (!g) continue;
+          const n = normText(g.primary);
+          if (n) names.push(n);
+        }
+        const uniq = Array.from(new Set(names));
+        // 顺序拉取，避免同时发太多请求
+        for (const n of uniq) {
+          try { await getNutritionRowByName(n); } catch { /* ignore */ }
+        }
+      }
+
+      function extractNutrition(row) {
+        if (!row) return null;
+        const normKey = (k) => String(k || "")
+          .toLowerCase()
+          .replace(/[\u00a0\u3000\s]/g, "")
+          .replace(/[（）()_\-]/g, "");
+        const keyMap = new Map();
+        for (const [k, v] of Object.entries(row || {})) keyMap.set(normKey(k), v);
+        const pick = (keys) => {
+          for (const k of (keys || [])) {
+            if (Object.prototype.hasOwnProperty.call(row, k)) return row[k];
+          }
+          for (const k of (keys || [])) {
+            const nk = normKey(k);
+            if (keyMap.has(nk)) return keyMap.get(nk);
+          }
+          return undefined;
+        };
+        const num = (v) => {
+          if (v === null || v === undefined || v === "") return null;
+          const x = Number(v);
+          return Number.isFinite(x) ? x : null;
+        };
+        return {
+          calorie: num(pick(["能量(kcal/100g)", "能量（kcal/100g）"])),
+          protein: num(pick(["蛋白质(Protein)/g", "蛋白质（Protein）/g"])),
+          fat: num(pick(["脂肪(Fat)/g", "脂肪（Fat）/g"])),
+          carbohydrate: num(pick(["碳水化合物(CHO)/g", "碳水化合物（CHO）/g"])),
+          water: num(pick(["水分(Water)/g", "水分（Water）/g"])),
+          cholesterol: num(pick(["胆固醇(Cholesterol)/mg", "胆固醇（Cholesterol）/mg", "胆固醇/cholesterol(mg)", "胆固醇(mg)"])),
+          ash: num(pick(["矿物质/g", "灰分(Ash)/g", "灰分（Ash）/g"])),
+          dietaryfiber: num(pick(["总膳食纤维(Dietary fiber)/g", "总膳食纤维（Dietary fiber）/g"])),
+          carotene: num(pick(["胡萝卜素(Carotene)/μg", "胡萝卜素（Carotene）/μg"])),
+          vitamin_a: num(pick(["维生素A(Vitamin A)/μg", "维生素A（Vitamin A）/μg"])),
+          vitamin_e: num(pick(["α-TE/mg"])),
+          thiamin: num(pick(["硫胺素(Thiamin)/mg", "硫胺素（Thiamin）/mg"])),
+          riboflavin: num(pick(["核黄素(Riboflavin)/mg", "核黄素（Riboflavin）/mg"])),
+          niacin: num(pick(["烟酸(Niacin)/mg", "烟酸（Niacin）/mg"])),
+          vitamin_c: num(pick(["维生素C(Vitamin C)/mg", "维生素C（Vitamin C）/mg"])),
+          ca: num(pick(["钙(Ca)/mg", "钙（Ca）/mg"])),
+          p: num(pick(["磷(P)/mg", "磷（P）/mg"])),
+          k: num(pick(["钾(K)/mg", "钾（K）/mg"])),
+          na: num(pick(["钠(Na)/mg", "钠（Na）/mg"])),
+          mg: num(pick(["镁(Mg)/mg", "镁（Mg）/mg"])),
+          fe: num(pick(["铁(Fe)/mg", "铁（Fe）/mg"])),
+          zn: num(pick(["锌(Zn)/mg", "锌（Zn）/mg"])),
+          se: num(pick(["硒(Se)/μg", "硒（Se）/μg"])),
+          cu: num(pick(["铜(Cu)/mg", "铜（Cu）/mg"])),
+          mn: num(pick(["锰(Mn)/mg", "锰（Mn）/mg"])),
+          i: num(pick(["碘(I)/μg", "碘（I）/μg"])),
+          sfa: num(pick(["饱和脂肪酸(SFA)/%", "饱和脂肪酸（SFA）/%"])),
+          mufa: num(pick(["单不饱和脂肪酸(MUFA)/%", "单不饱和脂肪酸（MUFA）/%"])),
+          pufa: num(pick(["多不饱和脂肪酸(PUFA)/%", "多不饱和脂肪酸（PUFA）/%"])),
+        };
+      }
+
+      const NUT_KEYS_ORDER = [
+        "calorie",
+        "protein",
+        "fat",
+        "carbohydrate",
+        "water",
+        "cholesterol",
+        "ash",
+        "dietaryfiber",
+        "carotene",
+        "vitamin_a",
+        "vitamin_e",
+        "thiamin",
+        "riboflavin",
+        "niacin",
+        "vitamin_c",
+        "ca",
+        "p",
+        "k",
+        "na",
+        "mg",
+        "fe",
+        "zn",
+        "se",
+        "cu",
+        "mn",
+        "i",
+        "sfa",
+        "mufa",
+        "pufa",
+      ];
+
+      function normalizeNutrition(n) {
+        const out = {};
+        for (const k of NUT_KEYS_ORDER) out[k] = (n && Object.prototype.hasOwnProperty.call(n, k)) ? n[k] : null;
+        // 兼容未来新增字段：保留额外 key
+        for (const [k, v] of Object.entries(n || {})) {
+          if (!Object.prototype.hasOwnProperty.call(out, k)) out[k] = v;
+        }
+        return out;
+      }
+
+      function nutritionHasValues(n) {
+        if (!n) return false;
+        for (const v of Object.values(n)) {
+          if (v !== null && v !== undefined) return true;
+        }
+        return false;
+      }
+
+      function getNutritionFinal(foodName) {
+        const name = normText(foodName);
+        const ov = state.nutrition_overrides?.[name];
+        if (ov && nutritionHasValues(ov)) return normalizeNutrition(ov);
+        const row = state.nutrition_cache[name]?.row || null;
+        return normalizeNutrition(extractNutrition(row) || {});
+      }
+
+      function todayVersionCode() {
+        const d = new Date();
+        const yy = String(d.getFullYear() % 100).padStart(2, "0");
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        return `${yy}${mm}${dd}`; // 例如：260206
+      }
+
+      function findJiaoziBoundaryIndex(foodsAll) {
+        if (!foodsAll || !foodsAll.length) return -1;
+        let idx = foodsAll.findIndex((f) => normText(f?.food_name) === "饺子");
+        if (idx >= 0) return idx;
+        idx = foodsAll.findIndex((f) => normText(f?.food_name).includes("饺子"));
+        return idx;
+      }
+
+      function computeMergeStatus(group) {
+        // 三态：
+        // - 已合并：营养素存在 + 至少一个单位换算填写了 g
+        // - 待更新单位：营养素存在，但单位换算还没填
+        // - 营养成分未填：单位已填，但营养素未匹配/无值
+        // - 待合并：单位/营养都没齐
+        if (!group) return "待合并";
+        const nutrition = getNutritionFinal(group.primary);
+        const nutritionOk = nutritionHasValues(nutrition);
+        ensureGroupUnits(group);
+        const units = Object.values(group.units || {});
+        const unitsOk = units.some((u) => Number.isFinite(Number(u.unit_to_g)));
+        if (nutritionOk && unitsOk) return "已合并";
+        if (nutritionOk && !unitsOk) return "待更新单位";
+        if (!nutritionOk && unitsOk) return "营养成分未填";
+        return "待合并";
+      }
+
+      // 只保留“合并结果”视图：所有操作在结果表内完成
+      function setViewModeResult() {
+        $("view_result").classList.add("on");
+        $("wrap_result").style.display = "";
+        ensureFoodsAllLoaded().then(() => renderResultTable());
+      }
+
+      function findMergedGroupByPrimary(foodName) {
+        const name = normText(foodName);
+        if (!name) return null;
+        return (state.merge.groups || []).find((g) => g && normText(g.primary) === name) || null;
+      }
+
+      function getGroupMeta(g) {
+        const src = Array.isArray(g?.source_rows) ? g.source_rows : [];
+        const r0 = src[0] || {};
+        const hasModelFilledUnit = !!Object.values(g?.units || {}).some((u) => String(u?.fill_source || "") === "model");
+        const ds0 = g?.data_source || "人工";
+        return {
+          // 兜底：只要有模型填充过的单位，数据来源按“模型”显示
+          data_source: (hasModelFilledUnit ? "模型" : ds0),
+          version: g?.version ?? r0["版本"] ?? "",
+          remark: g?.remark ?? r0["备注"] ?? "",
+        };
+      }
+
+      function getFoodMetaFromFoodRow(f) {
+        return {
+          data_source: "人工",
+          version: f?.["版本"] ?? "",
+          remark: f?.["备注"] ?? "",
+        };
+      }
+
+      function isBeforeJiaozi(foodName) {
+        const name = normText(foodName);
+        const b = typeof state.jiaozi_boundary === "number" ? state.jiaozi_boundary : -1;
+        const i = state.foods_index?.has(name) ? state.foods_index.get(name) : -1;
+        return b >= 0 && i >= 0 && i < b;
+      }
+
+      function foodMergeStatusForRow(f) {
+        const name = normText(f?.food_name);
+        const g = findMergedGroupByPrimary(name);
+        if (g) return computeMergeStatus(g);
+        const nut = getNutritionFinal(name);
+        const nutritionOk = nutritionHasValues(nut);
+        const unitsOk = Array.isArray(f?.units) && f.units.some((u) => Number.isFinite(Number(u?.unit_to_100g)));
+        if (nutritionOk && unitsOk) return "已合并";
+        if (nutritionOk && !unitsOk) return "待更新单位";
+        if (!nutritionOk && unitsOk) return "营养成分未填";
+        return "待合并";
+      }
+
+      function applyResultFilters(foods) {
+        const st = state.filters.status;
+        const src = state.filters.source;
+        const ver = normText(state.filters.version).toLowerCase();
+        const out = [];
+        const primarySet = new Set((state.merge.groups || []).filter(Boolean).map((g) => normText(g.primary)).filter(Boolean));
+        const keywords = splitKeywords(state.q);
+        for (const f of foods || []) {
+          const name = normText(f.food_name);
+          // 被合并进其它食物的条目：从结果表隐藏（但主 food_name 始终展示）
+          if (state.hidden_foods?.has(name) && !primarySet.has(name)) continue;
+          const g = findMergedGroupByPrimary(name);
+          const status = foodMergeStatusForRow(f);
+          const meta0 = g ? getGroupMeta(g) : getFoodMetaFromFoodRow(f);
+          const meta = {
+            data_source: (isBeforeJiaozi(name) && meta0.data_source !== "模型") ? "人工" : meta0.data_source,
+            version: meta0.version,
+            remark: meta0.remark,
+          };
+          if (status === "已合并" && !String(meta.version || "").trim()) {
+            meta.version = todayVersionCode();
+          }
+
+          // 搜索：必须基于“合并后的信息”匹配（比如合并出来的新别名），否则用户会以为主条目丢了
+          if (keywords.length) {
+            const parts = [];
+            parts.push(name);
+            // 支持按“合并组号”搜索：000013 / 13 都可匹配
+            if (g?.id) {
+              const gid = String(g.id).trim();
+              const gidNum = gid.replace(/^0+/, "") || "0";
+              parts.push(gid, gidNum, `group:${gid}`, `group:${gidNum}`);
+            }
+            if (g) {
+              parts.push(...(g.aliases || []));
+              parts.push(...((g.source_rows || []).map((r) => r.food_name)));
+              for (const r of (g.source_rows || [])) parts.push(...splitAliases(r["别名"]));
+              for (const u of Object.values(g.units || {})) {
+                parts.push(normText(u.unit));
+                parts.push(...(u.unit_aliases || []));
+              }
+            } else {
+              parts.push(...(f.aliases || []));
+              for (const u of (f.units || [])) {
+                parts.push(normText(u.unit));
+                parts.push(...(u.unit_aliases || []));
+              }
+            }
+            parts.push(String(meta.version ?? ""));
+            parts.push(String(meta.remark ?? ""));
+            const text = parts.filter(Boolean).join(" ");
+            if (!matchKeywords(text, keywords)) continue;
+          }
+
+          if (st && status !== st) continue;
+          if (src && meta.data_source !== src) continue;
+          if (ver) {
+            const v = String(meta.version ?? "").toLowerCase();
+            if (!v.includes(ver)) continue;
+          }
+          out.push(f);
+        }
+        return out;
+      }
+
+      function isFilterActive() {
+        return !!(state.filters.status || state.filters.source || normText(state.filters.version));
+      }
+
+      function updateFilterBtnUI() {
+        const btn = $("filterBtn");
+        if (!btn) return;
+        btn.classList.toggle("on", isFilterActive());
+        btn.textContent = isFilterActive() ? "筛选·已开启" : "筛选";
+      }
+
+      function renderResultTableSync(pageFoods) {
+        const tbody = $("tbody_result");
+        tbody.innerHTML = "";
+
+        function makeDetails(title, summaryText, contentEl) {
+          const wrap = document.createElement("div");
+          wrap.className = "json-cell";
+
+          const details = document.createElement("details");
+          details.className = "json-details";
+
+          const summary = document.createElement("summary");
+          summary.textContent = title;
+          const hint = document.createElement("span");
+          hint.className = "hint";
+          hint.textContent = summaryText ? `(${summaryText})` : "";
+          summary.appendChild(hint);
+
+          const box = document.createElement("div");
+          box.className = "json-pre";
+          box.appendChild(contentEl);
+
+          details.appendChild(summary);
+          details.appendChild(box);
+          wrap.appendChild(details);
+          return wrap;
+        }
+
+        function renderAllNamesLines(names) {
+          const d = document.createElement("div");
+          d.className = "lines";
+          for (const n of names || []) {
+            const line = document.createElement("div");
+            line.className = "line";
+            line.textContent = String(n);
+            d.appendChild(line);
+          }
+          if (!d.childNodes.length) {
+            const line = document.createElement("div");
+            line.className = "line";
+            line.style.color = "rgba(107,114,128,0.95)";
+            line.textContent = "—";
+            d.appendChild(line);
+          }
+          return d;
+        }
+
+        function renderUnitsList(units) {
+          const d = document.createElement("div");
+          d.className = "lines";
+          for (const u of units || []) {
+            const item = document.createElement("div");
+            item.className = "unit-item";
+            const k1 = document.createElement("div");
+            k1.className = "k";
+            k1.textContent = "all_unit_names";
+            const v1 = document.createElement("div");
+            v1.className = "v";
+            v1.textContent = JSON.stringify(u.all_unit_names || []);
+            const k2 = document.createElement("div");
+            k2.className = "k";
+            k2.style.marginTop = "6px";
+            k2.textContent = "100_grams_per_unit";
+            const v2 = document.createElement("div");
+            v2.className = "v";
+            v2.textContent = String(u["100_grams_per_unit"]);
+            item.appendChild(k1);
+            item.appendChild(v1);
+            item.appendChild(k2);
+            item.appendChild(v2);
+            d.appendChild(item);
+          }
+          if (!d.childNodes.length) {
+            const line = document.createElement("div");
+            line.className = "line";
+            line.style.color = "rgba(107,114,128,0.95)";
+            line.textContent = "—";
+            d.appendChild(line);
+          }
+          return d;
+        }
+
+        function renderNutritionKV(nutrition) {
+          const d = document.createElement("div");
+          d.className = "kv";
+          const n = normalizeNutrition(nutrition || {});
+          const show = [];
+          // 固定顺序 + 全量展示（即使为 null，也要显示 key；避免“字段变少”的错觉）
+          for (const k of NUT_KEYS_ORDER) show.push([k, n[k]]);
+          for (const [k, v] of Object.entries(n)) {
+            if (!NUT_KEYS_ORDER.includes(k)) show.push([k, v]);
+          }
+
+          if (!show.length) {
+            const k = document.createElement("div");
+            k.className = "k";
+            k.textContent = "nutrition";
+            const v = document.createElement("div");
+            v.className = "v";
+            v.style.color = "rgba(107,114,128,0.95)";
+            v.textContent = "—";
+            d.appendChild(k);
+            d.appendChild(v);
+            return d;
+          }
+
+          for (const [k0, v0] of show) {
+            const k = document.createElement("div");
+            k.className = "k";
+            k.textContent = k0;
+            const v = document.createElement("div");
+            v.className = "v";
+            v.textContent = (v0 === null || v0 === undefined) ? "—" : String(v0);
+            d.appendChild(k);
+            d.appendChild(v);
+          }
+          return d;
+        }
+
+        const boundary = typeof state.jiaozi_boundary === "number" ? state.jiaozi_boundary : findJiaoziBoundaryIndex(state.foods_all || []);
+        const verToday = todayVersionCode();
+
+        for (const f of pageFoods) {
+          const name = normText(f.food_name);
+          const g = findMergedGroupByPrimary(name);
+          if (g) ensureGroupUnits(g);
+
+          const nutrition = getNutritionFinal(name) || {};
+
+          // all_names（去重）
+          const allNames = g
+            ? uniqueKeepOrder([
+                name,
+                ...(g.aliases || []),
+                ...((g.source_rows || []).map((r) => r.food_name)),
+                ...((g.source_rows || []).flatMap((r) => splitAliases(r["别名"]))),
+              ]).filter(Boolean)
+            : uniqueKeepOrder([name, ...(f.aliases || [])]).filter(Boolean);
+
+          // units 列表
+          const units = [];
+          if (g) {
+            for (const u of Object.values(g.units || {})) {
+              const unit = normText(u.unit);
+              if (!unit) continue;
+              const names2 = uniqueKeepOrder([unit, ...(u.unit_aliases || [])]);
+              if (unit.toLowerCase() === "g") {
+                for (const extra of ["克", "G"]) if (!names2.includes(extra)) names2.push(extra);
+              }
+              const toG = (u.unit_to_g === null || u.unit_to_g === undefined || u.unit_to_g === "") ? null : Number(u.unit_to_g);
+              const to100 = Number.isFinite(toG) ? (toG / 100) : null;
+              units.push({ all_unit_names: names2, "100_grams_per_unit": to100 });
+            }
+          } else {
+            for (const u of (f.units || [])) {
+              const unit = normText(u.unit);
+              if (!unit) continue;
+              const names2 = uniqueKeepOrder([unit, ...(u.unit_aliases || [])]);
+              if (unit.toLowerCase() === "g") {
+                for (const extra of ["克", "G"]) if (!names2.includes(extra)) names2.push(extra);
+              }
+              const v100 = (u.unit_to_100g === null || u.unit_to_100g === undefined || u.unit_to_100g === "") ? null : Number(u.unit_to_100g);
+              units.push({ all_unit_names: names2, "100_grams_per_unit": Number.isFinite(v100) ? v100 : null });
+            }
+          }
+
+          const idx = state.foods_index?.has(name) ? state.foods_index.get(name) : -1;
+          const beforeJiaozi = boundary >= 0 && idx >= 0 && idx < boundary;
+
+          const nutritionOk = nutritionHasValues(nutrition);
+          const unitsOk = g
+            ? Object.values(g.units || {}).some((u) => Number.isFinite(Number(u?.unit_to_g)))
+            : units.some((u) => u["100_grams_per_unit"] !== null && u["100_grams_per_unit"] !== undefined && !Number.isNaN(Number(u["100_grams_per_unit"])));
+
+          // 饺子之前：只强制数据来源显示为人工；状态按你最新定义（nutrition 全空 => 不是已合并）
+          const status = g
+            ? computeMergeStatus(g)
+            : (nutritionOk && unitsOk
+                ? "已合并"
+                : (nutritionOk && !unitsOk
+                    ? "待更新单位"
+                    : (!nutritionOk && unitsOk ? "营养成分未填" : "待合并")));
+
+          const meta0 = g ? getGroupMeta(g) : { data_source: "人工", version: f["版本"] ?? "", remark: f["备注"] ?? "" };
+          const meta = {
+            data_source: (beforeJiaozi && meta0.data_source !== "模型") ? "人工" : meta0.data_source,
+            version: meta0.version,
+            remark: meta0.remark,
+          };
+          if (status === "已合并" && !String(meta.version || "").trim()) {
+            meta.version = verToday;
+          }
+
+          const tr = document.createElement("tr");
+          if (normText(state.active_food_name) === name) tr.classList.add("row-active");
+
+          // 点击整行：设为当前选中（用于 nutrition 写入）
+          tr.addEventListener("click", (ev) => {
+            const t = ev?.target;
+            const tag = (t && t.tagName) ? String(t.tagName).toUpperCase() : "";
+            // 点击输入/选择控件不抢焦点
+            if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || tag === "BUTTON" || tag === "SUMMARY") return;
+            state.active_food_name = name;
+            renderResultTable(); // 重新渲染以高亮选中行
+          });
+
+          // select (for merge)
+          {
+            const td = document.createElement("td");
+            const cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.className = "circle";
+            cb.checked = state.selection_foods.has(name);
+            cb.addEventListener("change", () => {
+              state.active_food_name = name; // 点左侧小圆圈也算选中当前食物
+              if (cb.checked) state.selection_foods.add(name);
+              else state.selection_foods.delete(name);
+            });
+            td.appendChild(cb);
+            tr.appendChild(td);
+          }
+
+          // id：你要的“合并后的 food_name”
+          {
+            const td = document.createElement("td");
+            td.textContent = name;
+            td.style.fontWeight = "650";
+            // 点击 id：打开该食物的“单位管理”（仅对已合并组生效）
+            td.style.cursor = "pointer";
+            td.addEventListener("click", () => {
+              // 无论是否已合并：都把这个 food_name 设为“当前选中”（用于 nutrition 写入）
+              state.active_food_name = name;
+              if (!g) {
+                setError("该食物尚未合并，先勾选并“合并选中”，再管理单位。");
+                return;
+              }
+              state.active_group_id = g.id;
+              renderUnitMergeBox();
+              // 滚动到单位管理区
+              try { $("unitMergeBox")?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch {}
+            });
+            tr.appendChild(td);
+          }
+          // all_names
+          {
+            const td = document.createElement("td");
+            const preview = allNames.length <= 4 ? allNames.join("、") : `${allNames.length}个名称`;
+            td.appendChild(makeDetails("展开", preview, renderAllNamesLines(allNames)));
+            tr.appendChild(td);
+          }
+          // units
+          {
+            const td = document.createElement("td");
+            const allFilled = (units || []).length
+              ? units.every((u) => u && u["100_grams_per_unit"] !== null && u["100_grams_per_unit"] !== undefined && Number.isFinite(Number(u["100_grams_per_unit"])))
+              : false;
+            const preview = `${units.length}个单位 · ${allFilled ? "系数已填写" : "系数未填写"}`;
+            td.appendChild(makeDetails("展开", preview, renderUnitsList(units)));
+            tr.appendChild(td);
+          }
+          // nutrition
+          {
+            const td = document.createElement("td");
+            const hasNut = nutritionHasValues(nutrition);
+            const preview = hasNut ? (nutrition.calorie !== null && nutrition.calorie !== undefined ? `kcal=${nutrition.calorie}` : "已匹配") : "未匹配(全空)";
+            td.appendChild(makeDetails("展开", preview, renderNutritionKV(nutrition)));
+            tr.appendChild(td);
+          }
+          // status
+          {
+            const td = document.createElement("td");
+            const pill = document.createElement("span");
+            pill.className =
+              "status-pill " +
+              (status === "已合并"
+                ? "ok"
+                : (status === "待更新单位"
+                    ? "warn"
+                    : (status === "营养成分未填" ? "nutri" : "todo")));
+            pill.textContent = status;
+            td.appendChild(pill);
+            tr.appendChild(td);
+          }
+          // data source (dropdown + color)
+          {
+            const td = document.createElement("td");
+            const sel = document.createElement("select");
+            const v0 = meta.data_source;
+            sel.className = "badge-select " + (v0 === "人工" ? "human" : (v0 === "模型" ? "model" : "auto"));
+            for (const v of ["人工", "模型", "自动"]) {
+              const opt = document.createElement("option");
+              opt.value = v;
+              opt.textContent = v;
+              sel.appendChild(opt);
+            }
+            sel.value = v0;
+            sel.addEventListener("change", () => {
+              if (g) g.data_source = sel.value;
+              sel.className = "badge-select " + (sel.value === "人工" ? "human" : (sel.value === "模型" ? "model" : "auto"));
+              saveMergeState(true);
+            });
+            td.appendChild(sel);
+            tr.appendChild(td);
+          }
+          // version (editable)
+          {
+            const td = document.createElement("td");
+            const inp = document.createElement("input");
+            inp.className = "mini-input";
+            inp.style.width = "110px";
+            inp.value = String(meta.version ?? "");
+            inp.addEventListener("input", () => {
+              if (g) g.version = inp.value;
+            });
+            inp.addEventListener("change", () => {
+              if (g) g.version = inp.value;
+              saveMergeState(true);
+            });
+            td.appendChild(inp);
+            tr.appendChild(td);
+          }
+          // remark (editable)
+          {
+            const td = document.createElement("td");
+            const inp = document.createElement("input");
+            inp.className = "mini-input";
+            inp.style.width = "220px";
+            inp.value = String(meta.remark ?? "");
+            inp.addEventListener("input", () => {
+              if (g) g.remark = inp.value;
+            });
+            inp.addEventListener("change", () => {
+              if (g) g.remark = inp.value;
+              saveMergeState(true);
+            });
+            td.appendChild(inp);
+            tr.appendChild(td);
+          }
+
+          tbody.appendChild(tr);
+        }
+      }
+
+      function renderResultTable() {
+        const cols = ["", "id", "all_names", "units", "nutrition", "合并状态", "数据来源", "版本", "备注"];
+        const thead = $("thead_result");
+        thead.innerHTML = "";
+        for (const c of cols) {
+          const th = document.createElement("th");
+          th.textContent = c;
+          thead.appendChild(th);
+        }
+
+        const all = state.foods_all || [];
+        const filtered = applyResultFilters(all);
+        const s = state.foods_view;
+        s.total = filtered.length;
+        const pageFoods = filtered.slice(s.offset, s.offset + s.limit);
+
+        updateFilterBtnUI();
+        renderMetaFor("map");
+        renderResultTableSync(pageFoods);
+
+        // 预取 nutrition：按 food_name
+        (async () => {
+          for (const f of pageFoods) {
+            const n = normText(f.food_name);
+            if (!n) continue;
+            try { await getNutritionRowByName(n); } catch {}
+          }
+          // nutrition_cache 更新后，重绘当前页即可（避免反复触发新的预取循环）
+          renderResultTableSync(pageFoods);
+        })();
+      }
+
+      function suggestToG(unitRaw) {
+        const u0 = normText(unitRaw);
+        if (!u0) return null;
+        const u = u0.replace(/^1\s*/, ""); // 允许 "1碗" 这种写法
+
+        // 支持类似 "120g" / "0.5kg" / "250ml" / "1l" 这种“带数值的单位”
+        {
+          const m = u.match(/^(\d+(?:\.\d+)?)\s*(g|克|ml|毫升|kg|千克|l|升)$/i);
+          if (m) {
+            const suf = String(m[2]).toLowerCase();
+            // 100g/245毫升 这种是“数量+单位”噪声，统一回归单位本身
+            if (suf === "kg" || suf === "千克") return 1000;
+            if (suf === "l" || suf === "升") return 1000;
+            return 1; // g/克/ml/毫升
+          }
+        }
+
+        const map = {
+          "g": 1,
+          "G": 1,
+          "克": 1,
+          "kg": 1000,
+          "千克": 1000,
+          "ml": 1,
+          "mL": 1,
+          "ML": 1,
+          "Ml": 1,
+          "毫升": 1,
+          "l": 1000,
+          "L": 1000,
+          "升": 1000,
+          "份": 225,
+          "小份": 150,
+          "大份": 350,
+          "碗": 200,
+          "小碗": 100,
+          "大碗": 300,
+          "盘": 300,
+          "小盘": 150,
+          "大盘": 500,
+          "两": 50,
+        };
+        if (u in map) return map[u];
+        return null;
+      }
+
+      function normalizeUnitToken(unitRaw) {
+        const raw = normText(unitRaw);
+        if (!raw) return { keep: false, canonical: "", aliases: [] };
+        let u = raw;
+        // 常见错别字修正
+        u = u.replace(/筒/g, "桶");
+        // 数字+单位噪声：100g / 245毫升 -> g/ml
+        const m = u.match(/^(\d+(?:\.\d+)?)\s*(g|克|G|ml|mL|ML|Ml|毫升|l|L|升|kg|千克)$/);
+        if (m) u = m[2];
+
+        // 主单位规范
+        const lower = u.toLowerCase();
+        if (["g", "克"].includes(lower) || u === "G") return { keep: true, canonical: "g", aliases: uniqueKeepOrder([raw, "克", "G"]) };
+        if (["ml", "毫升"].includes(lower) || ["mL", "ML", "Ml"].includes(u)) return { keep: true, canonical: "ml", aliases: uniqueKeepOrder([raw, "毫升", "mL", "ML", "Ml"]) };
+        if (["l", "升"].includes(lower) || u === "L") return { keep: true, canonical: "l", aliases: uniqueKeepOrder([raw, "升", "L"]) };
+        if (["kg", "千克"].includes(lower)) return { keep: true, canonical: "kg", aliases: uniqueKeepOrder([raw, "千克"]) };
+
+        // 明显不是单位：纯数字/过长混乱文本
+        if (/^\d+(\.\d+)?$/.test(u)) return { keep: false, canonical: "", aliases: [] };
+        if (u.length > 16) return { keep: false, canonical: "", aliases: [] };
+        return { keep: true, canonical: u, aliases: [raw] };
+      }
+
+      function mergeUnitEntry(base, from) {
+        if (!base || !from) return base || from;
+        const aliases = uniqueKeepOrder([...(base.unit_aliases || []), ...(from.unit_aliases || [])])
+          .map((x) => normText(x))
+          .filter((x) => x && x !== base.unit);
+        base.unit_aliases = aliases;
+        const b = (base.unit_to_g === null || base.unit_to_g === undefined || base.unit_to_g === "") ? null : Number(base.unit_to_g);
+        const f = (from.unit_to_g === null || from.unit_to_g === undefined || from.unit_to_g === "") ? null : Number(from.unit_to_g);
+        if (!Number.isFinite(b) && Number.isFinite(f)) base.unit_to_g = f;
+        return base;
+      }
+
+      function normalizeUnitsObj(unitsObj) {
+        const out = {};
+        for (const u of Object.values(unitsObj || {})) {
+          if (!u) continue;
+          const info = normalizeUnitToken(u.unit);
+          if (!info.keep || !info.canonical) continue;
+          const canonical = info.canonical;
+          const next = {
+            ...u,
+            unit: canonical,
+            unit_aliases: uniqueKeepOrder([...(u.unit_aliases || []), ...(info.aliases || [])]).filter((x) => {
+              const nx = normText(x);
+              return nx && nx !== canonical;
+            }),
+          };
+          // 规范主单位默认值兜底
+          if (next.unit_to_g === null || next.unit_to_g === undefined || next.unit_to_g === "" || Number.isNaN(Number(next.unit_to_g))) {
+            const s = suggestToG(canonical);
+            if (s !== null) next.unit_to_g = s;
+          }
+          if (!out[canonical]) out[canonical] = next;
+          else out[canonical] = mergeUnitEntry(out[canonical], next);
+        }
+        return out;
+      }
+
+      function groupSignature(g) {
+        const members = uniqueKeepOrder((g?.members || []).map((x) => normText(x)).filter(Boolean)).sort((a, b) => a.localeCompare(b, "zh-CN"));
+        if (!members.length) return "";
+        return members.join("||");
+      }
+
+      function buildUnitsFromRows(rows) {
+        const out = {};
+        for (const r of rows || []) {
+          const info = normalizeUnitToken(r.unit);
+          if (!info.keep || !info.canonical) continue;
+          const unit = info.canonical;
+          if (!out[unit]) {
+            out[unit] = {
+              unit,
+              unit_aliases: info.aliases.filter((x) => normText(x) && normText(x) !== unit),
+              unit_to_g: null,
+            };
+            const s = suggestToG(unit);
+            if (s !== null) out[unit].unit_to_g = s;
+
+            // 如果原始表里已经有 “单位转换（100克）”，优先用它推导 g
+            const v100 = r["单位转换（100克）"];
+            const n = v100 === null || v100 === undefined || v100 === "" ? null : Number(v100);
+            if (Number.isFinite(n)) out[unit].unit_to_g = n * 100;
+          }
+          for (const a of splitAliases(r["单位别名"])) {
+            const ai = normalizeUnitToken(a);
+            if (!ai.keep) continue;
+            const aa = ai.canonical;
+            if (aa && aa !== unit && !out[unit].unit_aliases.includes(aa)) out[unit].unit_aliases.push(aa);
+            for (const x of (ai.aliases || [])) {
+              const nx = normText(x);
+              if (nx && nx !== unit && !out[unit].unit_aliases.includes(nx)) out[unit].unit_aliases.push(nx);
+            }
+          }
+        }
+        return normalizeUnitsObj(out);
+      }
+
+      function renderModalUnits(unitsObj) {
+        const tbody = $("modal_units_tbody");
+        if (!tbody) return;
+        tbody.innerHTML = "";
+        const keys = Object.keys(unitsObj || {}).sort((a, b) => String(a).localeCompare(String(b), "zh-CN"));
+        for (const k of keys) {
+          const u = unitsObj[k];
+          const tr = document.createElement("tr");
+
+          const td1 = document.createElement("td");
+          const unitInp = document.createElement("input");
+          unitInp.className = "mini-input";
+          unitInp.style.width = "130px";
+          unitInp.value = u.unit || "";
+          unitInp.addEventListener("change", () => {
+            const next = normText(unitInp.value);
+            if (!next) {
+              unitInp.value = u.unit || "";
+              return;
+            }
+            if (next === k) return;
+            if (unitsObj[next]) {
+              setError(`单位已存在：${next}`);
+              unitInp.value = u.unit || "";
+              return;
+            }
+            delete unitsObj[k];
+            u.unit = next;
+            // 变更单位后，若转换成 g 为空，尝试按策略预填
+            if (u.unit_to_g === null || u.unit_to_g === undefined || u.unit_to_g === "") {
+              const s = suggestToG(next);
+              if (s !== null) u.unit_to_g = s;
+            }
+            unitsObj[next] = u;
+            renderModalUnits(unitsObj);
+          });
+          td1.appendChild(unitInp);
+          tr.appendChild(td1);
+
+          const td2 = document.createElement("td");
+          const aliasInp = document.createElement("input");
+          aliasInp.className = "mini-input";
+          aliasInp.style.width = "260px";
+          aliasInp.placeholder = "别名（逗号/空格分隔）";
+          aliasInp.value = (u.unit_aliases || []).join("，");
+          aliasInp.addEventListener("input", () => {
+            u.unit_aliases = splitAliases(aliasInp.value);
+          });
+          td2.appendChild(aliasInp);
+          tr.appendChild(td2);
+
+          const td3 = document.createElement("td");
+          const inp = document.createElement("input");
+          inp.className = "mini-input";
+          inp.style.width = "140px";
+          inp.placeholder = "例如：200";
+          inp.value = (u.unit_to_g === null || u.unit_to_g === undefined) ? "" : String(u.unit_to_g);
+          inp.addEventListener("input", () => {
+            const v = inp.value.trim();
+            u.unit_to_g = v ? Number(v) : null;
+            // 更新 100_grams_per_unit 显示
+            const v100 = (u.unit_to_g === null || u.unit_to_g === undefined) ? null : (Number(u.unit_to_g) / 100);
+            td4.textContent = v100 === null || Number.isNaN(v100) ? "" : String(v100);
+          });
+          td3.appendChild(inp);
+          tr.appendChild(td3);
+
+          const td4 = document.createElement("td");
+          const v100 = (u.unit_to_g === null || u.unit_to_g === undefined) ? null : (Number(u.unit_to_g) / 100);
+          td4.textContent = v100 === null || Number.isNaN(v100) ? "" : String(v100);
+          tr.appendChild(td4);
+
+          const td5 = document.createElement("td");
+          const delBtn = document.createElement("button");
+          delBtn.className = "mini danger";
+          delBtn.textContent = "删除";
+          delBtn.addEventListener("click", () => {
+            delete unitsObj[k];
+            renderModalUnits(unitsObj);
+          });
+          td5.appendChild(delBtn);
+          tr.appendChild(td5);
+
+          tbody.appendChild(tr);
+        }
+      }
+
+      function ensureGroupUnits(group) {
+        if (!group.units || typeof group.units !== "object") group.units = {};
+        if (!Array.isArray(group.units_removed)) group.units_removed = [];
+        const removed = new Set(group.units_removed.map((x) => normText(x)).filter(Boolean));
+
+        // 如果之前保存过 unit，但后来被标记删除：这里强制清理，避免“删了又回来”
+        for (const k of Object.keys(group.units)) {
+          if (removed.has(normText(k))) delete group.units[k];
+        }
+
+        const rows = Array.isArray(group.source_rows) ? group.source_rows : [];
+        for (const r of rows) {
+          const info = normalizeUnitToken(r.unit);
+          if (!info.keep || !info.canonical) continue;
+          const unit = info.canonical;
+          if (removed.has(unit)) continue;
+          const key = unit;
+          const unitAliases = splitAliases(r["单位别名"]);
+          if (!group.units[key]) {
+            group.units[key] = {
+              unit,
+              unit_aliases: info.aliases.filter((x) => normText(x) && normText(x) !== unit),
+              unit_to_g: null,
+            };
+            const s = suggestToG(unit);
+            if (s !== null) group.units[key].unit_to_g = s;
+          }
+          for (const a of unitAliases) {
+            const ai = normalizeUnitToken(a);
+            if (!ai.keep) continue;
+            const aa = ai.canonical;
+            if (aa && aa !== unit && !group.units[key].unit_aliases.includes(aa)) group.units[key].unit_aliases.push(aa);
+            for (const x of (ai.aliases || [])) {
+              const nx = normText(x);
+              if (nx && nx !== unit && !group.units[key].unit_aliases.includes(nx)) group.units[key].unit_aliases.push(nx);
+            }
+          }
+        }
+        group.units = normalizeUnitsObj(group.units || {});
+        return group.units;
+      }
+
+      function renderSimpleTable(theadId, tbodyId, columns, rows) {
+        const thead = $(theadId);
+        thead.innerHTML = "";
+        for (const c of columns) {
+          const th = document.createElement("th");
+          th.textContent = c;
+          thead.appendChild(th);
+        }
+        const tbody = $(tbodyId);
+        tbody.innerHTML = "";
+        for (const r of rows) {
+          const tr = document.createElement("tr");
+          for (const c of columns) {
+            const td = document.createElement("td");
+            const v = r[c];
+            td.textContent = (v === null || v === undefined) ? "" : String(v);
+            tr.appendChild(td);
+          }
+          tbody.appendChild(tr);
+        }
+      }
+
+      function renderCNSTable(columns, rows) {
+        // 增加一列勾选；并把空的数值显示为 0（不改原始数据，只改展示/更新用）
+        const thead = $("thead_cns");
+        thead.innerHTML = "";
+        const th0 = document.createElement("th");
+        th0.textContent = "";
+        thead.appendChild(th0);
+        for (const c of columns) {
+          const th = document.createElement("th");
+          th.textContent = c;
+          thead.appendChild(th);
+        }
+
+        const nonNumericCols = new Set(["food_id", "食物名称", "detail_url", "category_one", "category_two", "raw_len"]);
+
+        const tbody = $("tbody_cns");
+        tbody.innerHTML = "";
+        for (const r of rows || []) {
+          const tr = document.createElement("tr");
+          const rowNum = Number(r._row);
+          // checkbox
+          {
+            const td = document.createElement("td");
+            const cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.className = "circle";
+            cb.checked = state.selection_cns.has(rowNum);
+            cb.addEventListener("change", () => {
+              if (cb.checked) state.selection_cns.add(rowNum);
+              else state.selection_cns.delete(rowNum);
+            });
+            td.appendChild(cb);
+            tr.appendChild(td);
+          }
+          for (const c of columns) {
+            const td = document.createElement("td");
+            let v = r[c];
+            if (!nonNumericCols.has(c) && (v === null || v === undefined || v === "")) v = 0;
+            td.textContent = (v === null || v === undefined) ? "" : String(v);
+            tr.appendChild(td);
+          }
+          tbody.appendChild(tr);
+        }
+      }
+
+      function uniqueKeepOrder(arr) {
+        const out = [];
+        const seen = new Set();
+        for (const x of arr || []) {
+          const t = normText(x);
+          if (!t) continue;
+          if (seen.has(t)) continue;
+          seen.add(t);
+          out.push(t);
+        }
+        return out;
+      }
+
+      function buildMergedMapRowsForGroup(group) {
+        // 返回“去重后的 unit 行”，并把合并别名写到别名列（以及合并后别名列）
+        ensureGroupUnits(group);
+        const srcRows = Array.isArray(group.source_rows) ? group.source_rows : [];
+        const repRowId = Math.min(...(Array.isArray(group.row_ids) ? group.row_ids : []).filter((x) => Number.isFinite(Number(x))));
+
+        // 合并别名：来源于 group.aliases + 所有 source_rows.food_name/别名，最终去重并去掉 primary
+        const aliasSet = new Set();
+        for (const r of srcRows) {
+          aliasSet.add(normText(r.food_name));
+          for (const a of splitAliases(r["别名"])) aliasSet.add(a);
+        }
+        for (const a of (group.aliases || [])) aliasSet.add(a);
+        aliasSet.delete(normText(group.primary));
+        aliasSet.delete("");
+        const mergedAliases = Array.from(aliasSet).filter(Boolean);
+        const mergedAliasText = mergedAliases.join("，");
+
+        const unitsObj = group.units || {};
+        const unitKeys = Object.keys(unitsObj).sort((a, b) => String(a).localeCompare(String(b), "zh-CN"));
+
+        const mergedRows = [];
+        const nutRow = state.nutrition_cache[normText(group.primary)]?.row || null;
+        for (const unit of unitKeys) {
+          const u = unitsObj[unit];
+          const r0 = srcRows.find((r) => normText(r.unit) === unit) || srcRows[0] || {};
+          const toG = (u.unit_to_g === null || u.unit_to_g === undefined || u.unit_to_g === "") ? null : Number(u.unit_to_g);
+          const to100 = Number.isFinite(toG) ? (toG / 100) : null;
+          mergedRows.push({
+            __merged: true,
+            _row: Number.isFinite(repRowId) ? repRowId : null,
+            food_name: group.primary,
+            "别名": mergedAliasText,
+            "合并后别名": mergedAliasText,
+            unit: unit,
+            "单位别名": (u.unit_aliases || []).join("，"),
+            "单位转换（100克）": to100,
+            "核验状态": r0["核验状态"],
+            "版本": r0["版本"],
+            "备注": r0["备注"],
+            // 补充营养素展示列
+            ...Object.fromEntries(NUT_COLS_DISPLAY.map((c) => [c, nutRow ? nutRow[c] : null])),
+          });
+        }
+        return mergedRows;
+      }
+
+      function renderMapTable(data) {
+        // 自定义列：勾选 + 是否已合并 + 合并主名 + 原始列（插入“合并后别名”）
+        const baseCols0 = data.columns || [];
+        const baseCols = [];
+        for (const c of baseCols0) {
+          baseCols.push(c);
+          if (c === "别名" && !baseCols0.includes("合并后别名")) {
+            baseCols.push("合并后别名");
+          }
+        }
+        // 若原始列没有“别名”，仍然补一个“合并后别名”（避免你的需求无处显示）
+        if (!baseCols.includes("别名") && !baseCols.includes("合并后别名")) baseCols.splice(1, 0, "合并后别名");
+
+        // 追加营养素列（来自标准单位 100g）
+        for (const c of NUT_COLS_DISPLAY) {
+          if (!baseCols.includes(c)) baseCols.push(c);
+        }
+
+        const cols = ["", "是否已合并", "合并food_name", ...baseCols];
+        const thead = $("thead_map");
+        thead.innerHTML = "";
+        for (const c of cols) {
+          const th = document.createElement("th");
+          th.textContent = c;
+          thead.appendChild(th);
+        }
+
+        // 合并视图：把已合并的原始行隐藏，只显示“合并后的去重 unit 行”
+        const rawRows = data.rows || [];
+        const visibleRows = [];
+        const touchedGroupIds = new Set();
+        for (const r of rawRows) {
+          const rowNum = Number(r._row);
+          const g = findGroupByRow(rowNum);
+          if (g) {
+            touchedGroupIds.add(g.id);
+            continue; // 删除/隐藏：合并后的其他行不再展示
+          }
+          visibleRows.push({ __merged: false, ...r });
+        }
+        for (const gid of touchedGroupIds) {
+          const g = state.merge.groups.find((x) => x && x.id === gid);
+          if (!g) continue;
+          // 去重 unit 后的行追加到列表（简单起见追加到当前页末尾；需要按原位置插入的话再做）
+          for (const mr of buildMergedMapRowsForGroup(g)) visibleRows.push(mr);
+        }
+
+        const tbody = $("tbody_map");
+        tbody.innerHTML = "";
+        for (const r of visibleRows) {
+          const tr = document.createElement("tr");
+          const rowNum = Number(r._row);
+          const g = findGroupByRow(rowNum);
+
+          // checkbox
+          {
+            const td = document.createElement("td");
+            const cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.className = "circle";
+            if (r.__merged) {
+              cb.disabled = true;
+              cb.checked = false;
+            } else {
+              cb.checked = state.selection_map.has(rowNum);
+              cb.addEventListener("change", () => {
+                if (cb.checked) state.selection_map.add(rowNum);
+                else state.selection_map.delete(rowNum);
+              });
+            }
+            td.appendChild(cb);
+            tr.appendChild(td);
+          }
+
+          // merged flag
+          {
+            const td = document.createElement("td");
+            td.textContent = r.__merged ? computeMergeStatus(g) : "待合并";
+            tr.appendChild(td);
+          }
+          // merge primary name
+          {
+            const td = document.createElement("td");
+            td.textContent = g ? String(g.primary || "") : "";
+            tr.appendChild(td);
+          }
+
+          for (const c of baseCols) {
+            const td = document.createElement("td");
+            const v = r[c];
+            td.textContent = (v === null || v === undefined) ? "" : String(v);
+            tr.appendChild(td);
+          }
+          tbody.appendChild(tr);
+
+          // 点击合并行：切换下方单位合并/转换面板
+          if (r.__merged && g) {
+            tr.style.cursor = "pointer";
+            tr.addEventListener("click", () => {
+              state.active_group_id = g.id;
+              renderUnitMergeBox();
+            });
+          }
+        }
+      }
+
+      function renderMetaFor(key) {
+        if (key === "map") {
+          const s = state.foods_view;
+          const from = s.total === 0 ? 0 : s.offset + 1;
+          const to = Math.min(s.total, s.offset + s.limit);
+          $(`meta_${key}`).textContent = `关键词：${state.q || "-"} | 食物数：${s.total} | 展示：${from}-${to}`;
+          return;
+        }
+        const s = state.sheets[key];
+        const from = s.total === 0 ? 0 : s.offset + 1;
+        const to = Math.min(s.total, s.offset + s.limit);
+        $(`meta_${key}`).textContent = `关键词：${state.q || "-"} | 总数：${s.total} | 展示：${from}-${to}`;
+      }
+
+      async function loadWorkbook() {
+        setError("");
+        const info = await fetchJSON("/api/workbook");
+        state.workbook = info.workbook_path;
+        $("workbookInfo").textContent = `数据源：${info.workbook_path}`;
+      }
+
+      async function loadSheetKey(key) {
+        const s = state.sheets[key];
+        const qs = encodeQS({ sheet: s.name, q: state.q, mode: state.q_mode, offset: s.offset, limit: s.limit });
+        const data = await fetchJSON(`/api/sheet?${qs}`);
+        s.total = data.total;
+        s.columns = data.columns || [];
+        s.rows = data.rows || [];
+
+        if (key === "cns") renderCNSTable(s.columns, s.rows);
+        else renderSimpleTable(`thead_${key}`, `tbody_${key}`, s.columns, s.rows);
+        renderMetaFor(key);
+      }
+
+      async function refreshAll() {
+        setError("");
+        await Promise.all([loadSheetKey("cns"), ensureFoodsAllLoaded()]);
+        renderUnitMergeBox();
+        renderAutoMergeBox();
+        renderResultTable();
+        renderLastMergeTip();
+      }
+
+      function renderUnitMergeBox() {
+        const box = $("unitMergeBox");
+        const gid = state.active_group_id;
+        const g = gid ? state.merge.groups.find((x) => x && x.id === gid) : null;
+        if (!g) {
+          box.innerHTML = "";
+          return;
+        }
+        ensureGroupUnits(g);
+
+        const aliasesText = (g.aliases || []).join("、");
+        const units = Object.values(g.units || {});
+
+        box.innerHTML = `
+          <div style="margin-top:10px; padding: 10px 12px; border: 1px solid var(--border-soft); border-radius: 12px; background: rgba(255,255,255,0.65);">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div><b>当前合并组</b>：<span class="mono">${g.id}</span> | 主名：<b>${escapeHTML(g.primary || "")}</b></div>
+              <div style="margin-left:auto; display:flex; gap:8px;">
+                <button id="addUnitBtn" class="mini">新增单位</button>
+                <button id="fillStrategyBtn" class="mini">按策略预填 g</button>
+                <button id="fillModelBtn" class="mini">AI预填系数</button>
+                <button id="saveUnitBtn" class="mini primary">保存</button>
+              </div>
+            </div>
+            <div class="hint" style="margin-top:6px;">别名：${escapeHTML(aliasesText || "—")}</div>
+            <div class="table-wrap" style="margin-top:10px;">
+              <table style="min-width: 780px;">
+                <thead>
+                  <tr>
+                    <th>unit</th>
+                    <th>单位别名</th>
+                    <th>单位转换g</th>
+                    <th>单位转换（100克）= g/100</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="unitTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        `;
+
+        const tbody = box.querySelector("#unitTbody");
+        for (const u of units) {
+          const tr = document.createElement("tr");
+
+          const td1 = document.createElement("td");
+          const unitInp = document.createElement("input");
+          unitInp.className = "mini-input";
+          unitInp.style.width = "130px";
+          unitInp.value = u.unit || "";
+          unitInp.addEventListener("change", () => {
+            const oldName = normText(u.unit);
+            const next = normText(unitInp.value);
+            if (!next) {
+              unitInp.value = oldName;
+              return;
+            }
+            if (next === oldName) return;
+            if (g.units && g.units[next]) {
+              setError(`单位已存在：${next}`);
+              unitInp.value = oldName;
+              return;
+            }
+            // 防止旧单位被 ensureGroupUnits 再次补回：加入 removed
+            if (!Array.isArray(g.units_removed)) g.units_removed = [];
+            if (oldName && !g.units_removed.includes(oldName)) g.units_removed.push(oldName);
+            // 迁移 key
+            if (g.units && g.units[oldName]) delete g.units[oldName];
+            u.unit = next;
+            if (!g.units) g.units = {};
+            g.units[next] = u;
+            // 若新单位之前被删过，从 removed 移除
+            g.units_removed = (g.units_removed || []).filter((x) => normText(x) !== next);
+            saveMergeState(true);
+            renderUnitMergeBox();
+            renderResultTable();
+          });
+          td1.appendChild(unitInp);
+          tr.appendChild(td1);
+
+          const td2 = document.createElement("td");
+          const aliasInp = document.createElement("input");
+          aliasInp.className = "mini-input";
+          aliasInp.style.width = "260px";
+          aliasInp.placeholder = "别名（逗号/空格分隔）";
+          aliasInp.value = (u.unit_aliases || []).join("，");
+          aliasInp.addEventListener("change", () => {
+            u.unit_aliases = splitAliases(aliasInp.value);
+            saveMergeState(true);
+            renderUnitMergeBox();
+          });
+          td2.appendChild(aliasInp);
+          tr.appendChild(td2);
+
+          const td3 = document.createElement("td");
+          const inp = document.createElement("input");
+          inp.className = "mini-input";
+          inp.style.width = "140px";
+          inp.placeholder = "例如：200";
+          inp.value = (u.unit_to_g === null || u.unit_to_g === undefined) ? "" : String(u.unit_to_g);
+          inp.addEventListener("input", () => {
+            const v = inp.value.trim();
+            u.unit_to_g = v ? Number(v) : null;
+            // 手工改过则标记为人工
+            if (u.unit_to_g === null || u.unit_to_g === undefined || Number.isNaN(Number(u.unit_to_g))) {
+              u.fill_source = "";
+              u.fill_confidence = null;
+              u.fill_reason = "";
+            } else {
+              u.fill_source = "manual";
+              u.fill_confidence = null;
+              u.fill_reason = "";
+            }
+            saveMergeState();
+            // 重新渲染 100g 列（简单起见直接刷新 box）
+            renderUnitMergeBox();
+            renderResultTable();
+          });
+          td3.appendChild(inp);
+          if (u.fill_source === "model") {
+            const mark = document.createElement("div");
+            mark.className = "hint";
+            mark.style.marginTop = "4px";
+            const conf = Number.isFinite(Number(u.fill_confidence)) ? `，置信度 ${Number(u.fill_confidence).toFixed(2)}` : "";
+            const reason = u.fill_reason ? `，${u.fill_reason}` : "";
+            mark.textContent = `模型填充${conf}${reason}`;
+            td3.appendChild(mark);
+          } else if (u.fill_source === "manual") {
+            const mark = document.createElement("div");
+            mark.className = "hint";
+            mark.style.marginTop = "4px";
+            mark.textContent = "人工填写";
+            td3.appendChild(mark);
+          }
+          tr.appendChild(td3);
+
+          const td4 = document.createElement("td");
+          const v100 = (u.unit_to_g === null || u.unit_to_g === undefined) ? null : (Number(u.unit_to_g) / 100);
+          td4.textContent = v100 === null || Number.isNaN(v100) ? "" : String(v100);
+          tr.appendChild(td4);
+
+          const td5 = document.createElement("td");
+          const delBtn = document.createElement("button");
+          delBtn.className = "mini danger";
+          delBtn.textContent = "删除";
+          delBtn.addEventListener("click", () => {
+            const unitName = normText(u.unit);
+            if (!unitName) return;
+            if (!Array.isArray(g.units_removed)) g.units_removed = [];
+            if (!g.units_removed.includes(unitName)) g.units_removed.push(unitName);
+            if (g.units && g.units[unitName]) delete g.units[unitName];
+            saveMergeState(true);
+            renderUnitMergeBox();
+            renderResultTable();
+          });
+          td5.appendChild(delBtn);
+          tr.appendChild(td5);
+
+          tbody.appendChild(tr);
+        }
+
+        const btn = box.querySelector("#fillStrategyBtn");
+        if (btn) {
+          btn.addEventListener("click", () => {
+            for (const u of Object.values(g.units || {})) {
+              if (u.unit_to_g === null || u.unit_to_g === undefined || u.unit_to_g === "") {
+                const s = suggestToG(u.unit);
+                if (s !== null) u.unit_to_g = s;
+              }
+            }
+            saveMergeState(true);
+            renderUnitMergeBox();
+          });
+        }
+
+        const addBtn = box.querySelector("#addUnitBtn");
+        if (addBtn) {
+          addBtn.addEventListener("click", () => {
+            if (!g.units) g.units = {};
+            let base = "新单位";
+            let name = base;
+            let i = 1;
+            while (g.units[name]) {
+              i += 1;
+              name = `${base}${i}`;
+            }
+            g.units[name] = { unit: name, unit_aliases: [], unit_to_g: null };
+            // 如果之前删过同名单位，取消删除标记
+            g.units_removed = (g.units_removed || []).filter((x) => normText(x) !== name);
+            saveMergeState(true);
+            renderUnitMergeBox();
+          });
+        }
+
+        const modelBtn = box.querySelector("#fillModelBtn");
+        if (modelBtn) {
+          modelBtn.addEventListener("click", async () => {
+            try {
+              modelBtn.disabled = true;
+              modelBtn.textContent = "AI预填中...";
+              const allNames = uniqueKeepOrder([
+                normText(g.primary),
+                ...(g.aliases || []),
+                ...((g.source_rows || []).map((r) => normText(r.food_name))),
+                ...((g.source_rows || []).flatMap((r) => splitAliases(r["别名"]))),
+              ]).filter(Boolean);
+              const unitItems = Object.values(g.units || {}).map((u) => ({
+                unit: normText(u.unit),
+                unit_aliases: Array.isArray(u.unit_aliases) ? u.unit_aliases : [],
+              })).filter((x) => x.unit);
+              if (!unitItems.length) {
+                setError("当前没有可预测的单位。");
+                return;
+              }
+              const resp = await suggestUnitsByModel({
+                food_name: normText(g.primary),
+                all_names: allNames,
+                units: unitItems,
+              });
+              const items = Array.isArray(resp?.items) ? resp.items : [];
+              const unitKey = (s) => normText(s).toLowerCase();
+              const byUnit = new Map(items.map((x) => [unitKey(x?.unit), x]));
+              let filled = 0;
+              let matched = 0;
+              for (const u of Object.values(g.units || {})) {
+                const key = unitKey(u.unit);
+                const sug = byUnit.get(key);
+                if (!sug) continue;
+                matched += 1;
+                const n = (sug.unit_to_g === null || sug.unit_to_g === undefined || sug.unit_to_g === "") ? null : Number(sug.unit_to_g);
+                if (!Number.isFinite(n)) continue;
+                // 仅补空值，避免覆盖人工已有值
+                if (u.unit_to_g === null || u.unit_to_g === undefined || u.unit_to_g === "" || Number.isNaN(Number(u.unit_to_g))) {
+                  u.unit_to_g = n;
+                  u.fill_source = "model";
+                  u.fill_confidence = Number.isFinite(Number(sug.confidence)) ? Number(sug.confidence) : null;
+                  u.fill_reason = String(sug.reason || "");
+                  filled += 1;
+                }
+              }
+              // 只要 AI 返回并命中当前单位，就标记数据来源为“模型”（即使这次是0个空值可填）
+              if (matched > 0) g.data_source = "模型";
+              saveMergeState(true);
+              renderUnitMergeBox();
+              renderResultTable();
+              if (filled > 0) {
+                setError(`AI 已填充 ${filled} 个单位系数（已标注模型填充）`);
+              } else if (matched > 0) {
+                setError("AI 已命中当前单位，但无空系数可填（数据来源已标注为模型）");
+              } else {
+                setError("AI 返回成功，但未命中当前单位名称（请检查单位命名是否一致）");
+              }
+            } catch (e) {
+              setError(`AI 预填失败：${String(e?.message || e)}`);
+            } finally {
+              modelBtn.disabled = false;
+              modelBtn.textContent = "AI预填系数";
+            }
+          });
+        }
+
+        const saveBtn = box.querySelector("#saveUnitBtn");
+        if (saveBtn) {
+          saveBtn.addEventListener("click", () => {
+            saveMergeState(true);
+            const msg = "已保存（刷新页面也不会丢）";
+            setError(msg);
+            setTimeout(() => {
+              const cur = $("error")?.textContent || "";
+              if (cur === msg) setError("");
+            }, 1600);
+          });
+        }
+      }
+
+      function escapeHTML(s) {
+        return String(s || "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll("\"", "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function openMergeModal() {
+        const selected = Array.from(state.selection_map);
+        if (!selected.length) {
+          setError("请先在第一张表勾选要合并的行。");
+          return;
+        }
+        // 只允许合并当前页勾选行（我们有行快照，后续可扩展跨页）
+        const curRows = state.sheets.map.rows || [];
+        const selectedRows = curRows.filter((r) => selected.includes(Number(r._row)));
+        if (!selectedRows.length) {
+          setError("勾选的行不在当前页，先搜索/翻页到对应行再合并。");
+          return;
+        }
+        openMergeModalWithRows(selectedRows);
+      }
+
+      function openMergeModalWithRows(selectedRows) {
+        if (!selectedRows || !selectedRows.length) return;
+
+        const defaultPrimary = normText(selectedRows[0].food_name) || "";
+        const existedByPrimary = (state.merge.groups || []).find((g) => g && normText(g.primary) === defaultPrimary) || null;
+        // 仅当本次勾选里包含“已在某合并组中的行”时，才默认追加到该组；
+        // 避免同主名被自动并入旧组，导致原先的 id（如 000015）看起来“消失”。
+        const selectedRowIds = new Set(selectedRows.map((r) => Number(r._row)));
+        let existed = null;
+        for (const g of (state.merge.groups || [])) {
+          if (!g || !Array.isArray(g.row_ids)) continue;
+          if (g.row_ids.some((x) => selectedRowIds.has(Number(x)))) {
+            existed = g;
+            break;
+          }
+        }
+        const mergeId = existed?.id || pad6(state.merge.next_id || 1);
+        $("modal_merge_id").value = mergeId;
+        $("modal_primary").value = defaultPrimary;
+
+        // aliases: 历史 aliases + 其它 food_name + “别名”列
+        const aliasSet = new Set();
+        for (const a of (existedByPrimary?.aliases || [])) aliasSet.add(normText(a));
+        for (const r of selectedRows) {
+          const fn = normText(r.food_name);
+          if (fn && fn !== defaultPrimary) aliasSet.add(fn);
+          for (const a of splitAliases(r["别名"])) aliasSet.add(a);
+        }
+        $("modal_aliases").textContent = Array.from(aliasSet).join("、") || "—";
+        renderLastMergeTip(defaultPrimary);
+
+        $("mergeModalBackdrop").style.display = "flex";
+
+        // units preview/edit in modal
+        state._tmp_units = buildUnitsFromRows(selectedRows);
+        renderModalUnits(state._tmp_units);
+
+        // stash temp
+        state._tmp_selected_rows = selectedRows;
+        state._tmp_aliases = Array.from(aliasSet);
+      }
+
+      function closeMergeModal() {
+        $("mergeModalBackdrop").style.display = "none";
+        state._tmp_selected_rows = null;
+        state._tmp_aliases = null;
+        state._tmp_units = null;
+      }
+
+      function applyMergeSelection(selectedRows, mergeIdInput, primaryInput, unitsObj, options = {}) {
+        const primary = normText(primaryInput);
+        if (!primary) {
+          setError("id 不能为空。");
+          return null;
+        }
+        const groups = Array.isArray(state.merge.groups) ? state.merge.groups : [];
+        const prevLastPrimary = normText(state.merge?.last_merge?.primary || "");
+        const existedById = groups.find((g) => g && g.id === mergeIdInput) || null;
+        const existedByPrimary = groups.find((g) => g && normText(g.primary) === primary) || null;
+        const targetGroup = existedById || null;
+        const mergeId = targetGroup?.id || mergeIdInput;
+
+        // 二次合并：新选中行 + 旧组 source_rows 按 _row 合并去重
+        const srcMap = new Map();
+        const oldSrcRows = Array.isArray(targetGroup?.source_rows) ? targetGroup.source_rows : [];
+        for (const r of oldSrcRows) srcMap.set(Number(r._row), r);
+        for (const r of selectedRows) {
+          srcMap.set(Number(r._row), {
+            _row: Number(r._row),
+            food_name: r.food_name,
+            "别名": r["别名"],
+            unit: r.unit,
+            "单位别名": r["单位别名"],
+            "核验状态": r["核验状态"],
+            "版本": r["版本"],
+            "备注": r["备注"],
+          });
+        }
+        const sourceRows = Array.from(srcMap.values());
+        const rowIds = sourceRows.map((r) => Number(r._row));
+
+        // aliases：旧 aliases + source_rows 的 food_name/别名，去重后剔除 primary
+        const aliasBase = targetGroup || existedByPrimary || null;
+        const aliasSet = new Set((aliasBase?.aliases || []).map((x) => normText(x)).filter(Boolean));
+        for (const r of sourceRows) {
+          aliasSet.add(normText(r.food_name));
+          for (const a of splitAliases(r["别名"])) aliasSet.add(a);
+        }
+        aliasSet.delete(primary);
+        aliasSet.delete("");
+        const aliases = Array.from(aliasSet).filter(Boolean);
+
+        // 这些 food_name 被合并进 primary：从结果表隐藏（但作为别名保留）
+        const mergedFoodNames = uniqueKeepOrder(sourceRows.map((r) => r.food_name))
+          .map((x) => normText(x))
+          .filter((x) => x && x !== primary);
+        for (const n of mergedFoodNames) state.hidden_foods.add(n);
+        // primary 永远不隐藏（防止历史残留）
+        state.hidden_foods.delete(primary);
+
+        // 如果这些行之前属于别的合并组：从旧组删除（避免一个行被多个组占用）
+        const newRowIdSet = new Set(rowIds);
+        const newGroups = [];
+        for (const gg of groups) {
+          if (!gg) continue;
+          if (gg.id === mergeId) continue; // 同 id 的会被覆盖
+          const keptRowIds = (gg.row_ids || []).filter((x) => !newRowIdSet.has(Number(x)));
+          if (!keptRowIds.length) continue;
+          const keptSrc = (gg.source_rows || []).filter((r) => !newRowIdSet.has(Number(r._row)));
+          newGroups.push({ ...gg, row_ids: keptRowIds, source_rows: keptSrc });
+        }
+        state.merge.groups = newGroups;
+
+        const r0 = selectedRows[0] || {};
+        const oldUnits = targetGroup?.units && typeof targetGroup.units === "object" ? targetGroup.units : {};
+        const newUnits = unitsObj && typeof unitsObj === "object" ? unitsObj : {};
+        const mergedUnits = { ...oldUnits, ...newUnits };
+        const g = {
+          id: mergeId,
+          primary,
+          aliases,
+          data_source: options.data_source || targetGroup?.data_source || "人工",
+          version: targetGroup?.version ?? (r0["版本"] ?? ""),
+          remark: targetGroup?.remark ?? (r0["备注"] ?? ""),
+          row_ids: rowIds,
+          // 保存行快照，用于后续单位合并/导出；二次合并会在旧基础上追加
+          source_rows: sourceRows,
+          units: mergedUnits,
+          units_removed: Array.isArray(targetGroup?.units_removed) ? targetGroup.units_removed : [],
+        };
+
+        // 避免重复 id：如果已有同 id，覆盖（便于反复调整）
+        const idx = state.merge.groups.findIndex((x) => x && x.id === mergeId);
+        if (idx >= 0) state.merge.groups[idx] = g;
+        else state.merge.groups.push(g);
+
+        // 仅在创建新组合并时才自增 id
+        if (!targetGroup) state.merge.next_id = Number(state.merge.next_id || 1) + 1;
+        state.merge.last_merge = { primary, id: mergeId, at: new Date().toISOString() };
+        saveMergeState(!!options.push_undo);
+        if (options.show_msg !== false) {
+          setError(`已合并到：${primary}${prevLastPrimary ? `；上一次合并到：${prevLastPrimary}` : ""}`);
+        }
+
+        state.active_group_id = mergeId;
+        state.active_food_name = primary;
+        state.selection_map.clear();
+        // 合并完成：清空“合并结果表”的勾选，避免下一次操作误带上一次的选择
+        state.selection_foods.clear();
+        if (options.jump_to_result !== false) {
+          // 需求：确认合并后回到“无搜索”状态，并跳到本次（上一次）合并食物所在页
+          state.q = "";
+          const qInp = $("qInput");
+          if (qInp) qInp.value = "";
+          {
+            const s = state.foods_view;
+            const allNoSearch = applyResultFilters(state.foods_all || []);
+            const idxFood = allNoSearch.findIndex((f) => normText(f?.food_name) === primary);
+            s.offset = idxFood >= 0 ? Math.floor(idxFood / s.limit) * s.limit : 0;
+          }
+          setViewModeResult();
+        }
+        if (options.close_modal !== false) closeMergeModal();
+        if (options.refresh !== false) {
+          refreshAll().then(() => {
+            try { $("last_merge_tip")?.scrollIntoView({ behavior: "smooth", block: "center" }); } catch {}
+          });
+        }
+        return g;
+      }
+
+      function confirmMerge() {
+        const selectedRows = state._tmp_selected_rows || [];
+        if (!selectedRows.length) return;
+        const mergeIdInput = $("modal_merge_id").value;
+        const primary = normText($("modal_primary").value);
+        applyMergeSelection(selectedRows, mergeIdInput, primary, state._tmp_units, {
+          push_undo: true,
+          show_msg: true,
+          jump_to_result: true,
+          close_modal: true,
+          refresh: true,
+        });
+      }
+
+      function buildExportRows() {
+        // 关键：导出基于“整文件全量 foods_all”，而不是当前页面可见数据
+        const rows = [];
+        const allFoods = Array.isArray(state.foods_all) ? state.foods_all : [];
+        const boundary = typeof state.jiaozi_boundary === "number" ? state.jiaozi_boundary : findJiaoziBoundaryIndex(allFoods);
+        const verToday = todayVersionCode();
+
+        for (const f of allFoods) {
+          const name = normText(f?.food_name);
+          if (!name) continue;
+          const g = findMergedGroupByPrimary(name);
+          if (g) ensureGroupUnits(g);
+
+          const nutrition = getNutritionFinal(name) || {};
+
+          const allNames = g
+            ? uniqueKeepOrder([
+                name,
+                ...(g.aliases || []),
+                ...((g.source_rows || []).map((r) => r.food_name)),
+                ...((g.source_rows || []).flatMap((r) => splitAliases(r["别名"]))),
+              ]).filter(Boolean)
+            : uniqueKeepOrder([name, ...(f.aliases || [])]).filter(Boolean);
+
+          const units = [];
+          if (g) {
+            for (const u of Object.values(g.units || {})) {
+              const unit = normText(u.unit);
+              if (!unit) continue;
+              const names2 = uniqueKeepOrder([unit, ...(u.unit_aliases || [])]);
+              if (unit.toLowerCase() === "g") {
+                for (const extra of ["克", "G"]) if (!names2.includes(extra)) names2.push(extra);
+              }
+              const toG = (u.unit_to_g === null || u.unit_to_g === undefined || u.unit_to_g === "") ? null : Number(u.unit_to_g);
+              const to100 = Number.isFinite(toG) ? (toG / 100) : null;
+              units.push({ all_unit_names: names2, "100_grams_per_unit": to100 });
+            }
+          } else {
+            for (const u of (f.units || [])) {
+              const unit = normText(u.unit);
+              if (!unit) continue;
+              const names2 = uniqueKeepOrder([unit, ...(u.unit_aliases || [])]);
+              if (unit.toLowerCase() === "g") {
+                for (const extra of ["克", "G"]) if (!names2.includes(extra)) names2.push(extra);
+              }
+              const v100 = (u.unit_to_100g === null || u.unit_to_100g === undefined || u.unit_to_100g === "") ? null : Number(u.unit_to_100g);
+              units.push({ all_unit_names: names2, "100_grams_per_unit": Number.isFinite(v100) ? v100 : null });
+            }
+          }
+
+          const status = g ? computeMergeStatus(g) : foodMergeStatusForRow(f);
+
+          const idx = state.foods_index?.has(name) ? state.foods_index.get(name) : -1;
+          const beforeJiaozi = boundary >= 0 && idx >= 0 && idx < boundary;
+          const meta0 = g ? getGroupMeta(g) : getFoodMetaFromFoodRow(f);
+          const meta = {
+            data_source: (beforeJiaozi && meta0.data_source !== "模型") ? "人工" : meta0.data_source,
+            version: meta0.version,
+            remark: meta0.remark,
+          };
+          const resolvedVersion = String((status === "已合并" && !String(meta.version ?? "").trim()) ? verToday : (meta.version ?? ""));
+
+          rows.push({
+            food_id: g ? String(g.id || "").padStart(6, "0") : "",
+            food_name: name,
+            all_names: allNames,
+            nutrition: nutrition || {},
+            units,
+            merge_status: status,
+            data_source: meta.data_source || "人工",
+            version: resolvedVersion,
+            remark: String(meta.remark ?? ""),
+          });
+        }
+        return rows;
+      }
+
+      function exportFinalJSONL(selectedVersions = null) {
+        let foods = buildExportRows();
+        if (selectedVersions instanceof Set) {
+          foods = foods.filter((x) => selectedVersions.has(String(x.version ?? "")));
+        }
+        if (!foods.length) {
+          setError("当前选择的版本没有可导出数据。");
+          return;
+        }
+        const jsonl = foods.map((x) => JSON.stringify(x)).join("\n") + (foods.length ? "\n" : "");
+        const blob = new Blob([jsonl], { type: "application/jsonl;charset=utf-8" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "食物库-最终合并.jsonl";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      }
+
+      function renderExportVersionList() {
+        const box = $("export_ver_list");
+        if (!box) return;
+        const versionsSet = new Set(buildExportRows().map((x) => String(x.version ?? "")));
+        // 版本选择也包含“全文件原始数据”的所有版本，避免漏掉当前导出行里暂未出现的版本值
+        for (const f of (state.foods_all || [])) {
+          versionsSet.add(f?.["版本"] == null ? "" : String(f["版本"]).trim());
+        }
+        const versions = Array.from(versionsSet);
+        versions.sort((a, b) => {
+          if (!a && b) return 1;
+          if (a && !b) return -1;
+          return String(b).localeCompare(String(a), "zh-CN");
+        });
+        box.innerHTML = "";
+        for (const v of versions) {
+          const item = document.createElement("label");
+          item.className = "version-item";
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.value = v;
+          cb.checked = true;
+          const txt = document.createElement("span");
+          txt.textContent = v ? `版本 ${v}` : "空版本";
+          item.appendChild(cb);
+          item.appendChild(txt);
+          box.appendChild(item);
+        }
+      }
+
+      async function openExportModal() {
+        await ensureFoodsAllLoaded();
+        renderExportVersionList();
+        $("exportModalBackdrop").style.display = "flex";
+      }
+
+      function closeExportModal() {
+        $("exportModalBackdrop").style.display = "none";
+      }
+
+      function collectSelectedExportVersions() {
+        const box = $("export_ver_list");
+        const checked = Array.from(box?.querySelectorAll("input[type='checkbox']:checked") || []);
+        return new Set(checked.map((x) => String(x.value ?? "")));
+      }
+
+      async function fetchMapRowsByFoodNames(names) {
+        const out = [];
+        const seen = new Set();
+        for (const n0 of names || []) {
+          const n = normText(n0);
+          if (!n) continue;
+          const qs = encodeQS({ sheet: SHEETS.map, q: n, offset: 0, limit: 500 });
+          const data = await fetchJSON(`/api/sheet?${qs}`);
+          for (const r of (data.rows || [])) {
+            if (normText(r.food_name) !== n) continue;
+            const rid = Number(r._row);
+            if (!Number.isFinite(rid) || seen.has(rid)) continue;
+            seen.add(rid);
+            out.push(r);
+          }
+        }
+        return out;
+      }
+
+      async function fillGroupUnitsByModel(g) {
+        if (!g) return { matched: 0, filled: 0 };
+        ensureGroupUnits(g);
+        g.units = normalizeUnitsObj(g.units || {});
+        const allNames = uniqueKeepOrder([
+          normText(g.primary),
+          ...(g.aliases || []),
+          ...((g.source_rows || []).map((r) => normText(r.food_name))),
+          ...((g.source_rows || []).flatMap((r) => splitAliases(r["别名"]))),
+        ]).filter(Boolean);
+        const unitItems = Object.values(g.units || {}).map((u) => ({
+          unit: normText(u.unit),
+          unit_aliases: Array.isArray(u.unit_aliases) ? u.unit_aliases : [],
+        })).filter((x) => x.unit);
+        if (!unitItems.length) return { matched: 0, filled: 0 };
+        const resp = await suggestUnitsByModel({
+          food_name: normText(g.primary),
+          all_names: allNames,
+          units: unitItems,
+        });
+        const items = Array.isArray(resp?.items) ? resp.items : [];
+        const unitKey = (s) => normText(s).toLowerCase();
+        const byUnit = new Map(items.map((x) => [unitKey(x?.unit), x]));
+        let matched = 0;
+        let filled = 0;
+        const toDelete = new Set();
+        const renamed = {};
+        for (const [k, u] of Object.entries(g.units || {})) {
+          const sug = byUnit.get(unitKey(u.unit));
+          if (!sug) continue;
+          matched += 1;
+          // 模型判断是否无效单位
+          if (sug.is_valid_unit === false) {
+            toDelete.add(k);
+            continue;
+          }
+          // 模型建议的规范单位名（可用于重命名合并）
+          const normByModel = normText(sug.normalized_unit || "");
+          if (normByModel && normByModel !== k) renamed[k] = normByModel;
+          const n = (sug.unit_to_g === null || sug.unit_to_g === undefined || sug.unit_to_g === "") ? null : Number(sug.unit_to_g);
+          if (!Number.isFinite(n)) continue;
+          if (u.unit_to_g === null || u.unit_to_g === undefined || u.unit_to_g === "" || Number.isNaN(Number(u.unit_to_g))) {
+            u.unit_to_g = n;
+            u.fill_source = "model";
+            u.fill_confidence = Number.isFinite(Number(sug.confidence)) ? Number(sug.confidence) : null;
+            u.fill_reason = String(sug.reason || "");
+            filled += 1;
+          }
+        }
+        // 删除模型判定无效的单位
+        for (const k of Array.from(toDelete)) {
+          delete g.units[k];
+        }
+        // 按模型规范名重命名并合并
+        for (const [oldKey, newKey0] of Object.entries(renamed)) {
+          const from = g.units[oldKey];
+          if (!from) continue;
+          const ni = normalizeUnitToken(newKey0);
+          const newKey = ni.keep && ni.canonical ? ni.canonical : normText(newKey0);
+          if (!newKey) continue;
+          delete g.units[oldKey];
+          from.unit = newKey;
+          from.unit_aliases = uniqueKeepOrder([...(from.unit_aliases || []), oldKey, ...(ni.aliases || [])]).filter((x) => normText(x) && normText(x) !== newKey);
+          if (!g.units[newKey]) g.units[newKey] = from;
+          else g.units[newKey] = mergeUnitEntry(g.units[newKey], from);
+        }
+        g.units = normalizeUnitsObj(g.units || {});
+        if (matched > 0) g.data_source = "模型";
+        return { matched, filled };
+      }
+
+      async function fillGroupNutrition(g, writebackExcel = false) {
+        if (!g) return { source: "", wrote: false };
+        const allNames = uniqueKeepOrder([
+          normText(g.primary),
+          ...(g.aliases || []),
+          ...((g.source_rows || []).map((r) => normText(r.food_name))),
+          ...((g.source_rows || []).flatMap((r) => splitAliases(r["别名"]))),
+        ]).filter(Boolean);
+        const r = await matchOrInferNutrition({ food_name: normText(g.primary), all_names: allNames });
+        if (r?.source === "cns") {
+          const nut = normalizeNutrition(r.nutrition || extractNutrition(r.row) || {});
+          state.nutrition_overrides[normText(g.primary)] = nut;
+          if (writebackExcel && r.row) {
+            try {
+              await fetchJSON("/api/nutrition/bulk_update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ target_food_name: normText(g.primary), row: r.row }),
+              });
+            } catch {}
+          }
+          return { source: "cns", wrote: !!(writebackExcel && r.row) };
+        }
+        const nut = normalizeNutrition(r?.nutrition || {});
+        state.nutrition_overrides[normText(g.primary)] = nut;
+        g.data_source = "模型";
+        return { source: "model", wrote: false };
+      }
+
+      async function applyAutoGroupByNames(group, writebackExcel = false) {
+        const members = uniqueKeepOrder((group?.members || []).map((x) => normText(x)).filter(Boolean));
+        if (members.length < 2) return { ok: false, reason: "成员不足" };
+        const rows = await fetchMapRowsByFoodNames(members);
+        if (rows.length < 2) return { ok: false, reason: "未找到足够原始行" };
+        const primary = normText(group?.primary) || normText(rows[0]?.food_name);
+        const mergeId = pad6(state.merge.next_id || 1);
+        const unitsObj = buildUnitsFromRows(rows);
+        const g = applyMergeSelection(rows, mergeId, primary, unitsObj, {
+          data_source: "模型",
+          push_undo: false,
+          show_msg: false,
+          jump_to_result: false,
+          close_modal: false,
+          refresh: false,
+        });
+        if (!g) return { ok: false, reason: "合并失败" };
+        const unitsResult = await fillGroupUnitsByModel(g);
+        const nutritionResult = await fillGroupNutrition(g, !!writebackExcel);
+        return {
+          ok: true,
+          primary: g.primary,
+          id: g.id,
+          members,
+          row_ids: rows.map((r) => Number(r?._row)).filter((x) => Number.isFinite(x)),
+          member_rows: members.map((m) => ({ food_name: m, rows: rows.filter((r) => normText(r?.food_name) === normText(m)).map((r) => Number(r?._row)).filter((x) => Number.isFinite(x)) })),
+          confidence: Number(group?.confidence || 0),
+          units: unitsResult,
+          nutrition: nutritionResult,
+        };
+      }
+
+      async function runAutoMergeBatch() {
+        const p = state.auto_merge?.params || { t_high: 0.86, t_low: 0.70, writeback_excel: false, auto_apply_pending: true, merge_by_id_only: true, pair_filter: "all", pair_conf_min: 0, pair_conf_max: 1 };
+        await ensureFoodsAllLoaded();
+        const mergedNameSet = new Set();
+        for (const g of (state.merge.groups || [])) {
+          if (!g) continue;
+          mergedNameSet.add(normText(g.primary));
+          for (const r of (g.source_rows || [])) mergedNameSet.add(normText(r?.food_name));
+        }
+        for (const n of (state.hidden_foods || [])) mergedNameSet.add(normText(n));
+        const payloadFoods = (state.foods_all || []).filter((f) => !mergedNameSet.has(normText(f?.food_name))).map((f) => ({
+          food_name: f.food_name,
+          aliases: p.merge_by_id_only !== false ? [] : (f.aliases || []),
+          units: (f.units || []).map((u) => ({ unit: u.unit, unit_aliases: u.unit_aliases || [] })),
+          _rows: Array.isArray(f._rows) ? f._rows : [],
+        }));
+        const r = await suggestAutoMerge({
+          foods: payloadFoods,
+          t_high: Number(p.t_high || 0.86),
+          t_low: Number(p.t_low || 0.70),
+          max_candidates: 500,
+          merge_by_id_only: p.merge_by_id_only !== false,
+          use_embedding_api: false,
+          use_local_embedding: true,
+        });
+        const blocked = new Set((state.auto_merge?.blocked_group_sigs || []).map((x) => String(x || "")).filter(Boolean));
+        const autoGroupsRaw = Array.isArray(r?.auto_applied_groups) ? r.auto_applied_groups : [];
+        const pendingGroupsRaw = Array.isArray(r?.pending_review_groups) ? r.pending_review_groups : [];
+        const autoGroups = autoGroupsRaw.filter((g) => !blocked.has(groupSignature(g)));
+        const pendingGroups = pendingGroupsRaw.filter((g) => !blocked.has(groupSignature(g)));
+        const groupsToApply = p.auto_apply_pending ? [...autoGroups, ...pendingGroups] : autoGroups.slice();
+        state.auto_merge.pending = p.auto_apply_pending ? [] : pendingGroups;
+        state.auto_merge.last_auto_applied = groupsToApply;
+
+        // 整个批处理只压一次 undo 快照
+        saveMergeState(true);
+        const applied = [];
+        const failed = [];
+        for (const g of groupsToApply) {
+          try {
+            const rr = await applyAutoGroupByNames(g, !!p.writeback_excel);
+            if (rr?.ok) applied.push(rr);
+            else failed.push({ primary: String(g?.primary || ""), members: g?.members || [], reason: String(rr?.reason || "未知原因") });
+          } catch (e) {
+            failed.push({ primary: String(g?.primary || ""), members: g?.members || [], reason: String(e?.message || e || "未知异常") });
+          }
+        }
+        state.auto_merge.run_report = {
+          generated_at: new Date().toISOString(),
+          mode: p.auto_apply_pending ? "full_auto" : "high_conf_only",
+          candidate_pairs: Number(r?.candidate_pairs || 0),
+          candidate_pairs_detail: Array.isArray(r?.candidate_pairs_detail) ? r.candidate_pairs_detail : [],
+          thresholds: r?.thresholds || { t_high: Number(p.t_high || 0.86), t_low: Number(p.t_low || 0.70) },
+          counts: {
+            auto_groups: autoGroups.length,
+            pending_groups: pendingGroups.length,
+            planned_apply: groupsToApply.length,
+            applied: applied.length,
+            failed: failed.length,
+          },
+          applied_groups: applied,
+          failed_groups: failed,
+        };
+        saveMergeState(false);
+        await refreshAll();
+        if (p.auto_apply_pending) {
+          setError(`全自动执行完成：已执行 ${applied.length}/${groupsToApply.length} 组；失败 ${failed.length} 组。`);
+        } else {
+          setError(`自动合并完成：已执行 ${applied.length}/${autoGroups.length} 组；待确认 ${pendingGroups.length} 组。`);
+        }
+      }
+
+      async function runAutoMergePreview() {
+        const p = state.auto_merge?.params || { t_high: 0.86, t_low: 0.70, writeback_excel: false, auto_apply_pending: true, merge_by_id_only: true, pair_filter: "all", pair_conf_min: 0, pair_conf_max: 1 };
+        await ensureFoodsAllLoaded();
+        const mergedNameSet = new Set();
+        for (const g of (state.merge.groups || [])) {
+          if (!g) continue;
+          mergedNameSet.add(normText(g.primary));
+          for (const r of (g.source_rows || [])) mergedNameSet.add(normText(r?.food_name));
+        }
+        for (const n of (state.hidden_foods || [])) mergedNameSet.add(normText(n));
+        const payloadFoods = (state.foods_all || []).filter((f) => !mergedNameSet.has(normText(f?.food_name))).map((f) => ({
+          food_name: f.food_name,
+          aliases: p.merge_by_id_only !== false ? [] : (f.aliases || []),
+          units: (f.units || []).map((u) => ({ unit: u.unit, unit_aliases: u.unit_aliases || [] })),
+          _rows: Array.isArray(f._rows) ? f._rows : [],
+        }));
+        const r = await suggestAutoMerge({
+          foods: payloadFoods,
+          t_high: Number(p.t_high || 0.86),
+          t_low: Number(p.t_low || 0.70),
+          max_candidates: 500,
+          merge_by_id_only: p.merge_by_id_only !== false,
+          use_embedding_api: false,
+          use_local_embedding: true,
+        });
+        const blocked = new Set((state.auto_merge?.blocked_group_sigs || []).map((x) => String(x || "")).filter(Boolean));
+        const autoGroups = (Array.isArray(r?.auto_applied_groups) ? r.auto_applied_groups : []).filter((g) => !blocked.has(groupSignature(g)));
+        const pendingGroups = (Array.isArray(r?.pending_review_groups) ? r.pending_review_groups : []).filter((g) => !blocked.has(groupSignature(g)));
+        state.auto_merge.preview_report = {
+          generated_at: new Date().toISOString(),
+          candidate_pairs: Number(r?.candidate_pairs || 0),
+          candidate_pairs_detail: Array.isArray(r?.candidate_pairs_detail) ? r.candidate_pairs_detail : [],
+          auto_count: autoGroups.length,
+          pending_count: pendingGroups.length,
+          thresholds: r?.thresholds || { t_high: Number(p.t_high || 0.86), t_low: Number(p.t_low || 0.70) },
+          auto_examples: autoGroups.slice(0, 8),
+          pending_examples: pendingGroups.slice(0, 8),
+        };
+        saveMergeState(false);
+      }
+
+      function renderAutoMergeBox() {
+        const box = $("autoMergeBox");
+        if (!box) return;
+        const p = state.auto_merge?.params || { t_high: 0.86, t_low: 0.70, writeback_excel: false, auto_apply_pending: true, merge_by_id_only: true, pair_filter: "all", pair_conf_min: 0, pair_conf_max: 1 };
+        const pairFilter = ["all", "auto", "pending", "reject"].includes(String(p?.pair_filter || "all"))
+          ? String(p.pair_filter || "all")
+          : "all";
+        const confMinRaw = Number(p?.pair_conf_min ?? 0);
+        const confMaxRaw = Number(p?.pair_conf_max ?? 1);
+        const confMin = Math.max(0, Math.min(1, Number.isFinite(confMinRaw) ? confMinRaw : 0));
+        const confMax = Math.max(0, Math.min(1, Number.isFinite(confMaxRaw) ? confMaxRaw : 1));
+        const pairConfMin = Math.min(confMin, confMax);
+        const pairConfMax = Math.max(confMin, confMax);
+        const pending = state.auto_merge?.pending || [];
+        const lastApplied = state.auto_merge?.last_auto_applied || [];
+        const report = state.auto_merge?.preview_report || null;
+        const runReport = state.auto_merge?.run_report || null;
+        const blockedCount = Array.isArray(state.auto_merge?.blocked_group_sigs) ? state.auto_merge.blocked_group_sigs.length : 0;
+        box.innerHTML = `
+          <div class="auto-merge-card">
+            <div class="auto-merge-top">
+              <b>自动合并批处理</b>
+              <span class="hint" style="margin:0;">一键自动合并 + units + nutrition</span>
+            </div>
+            <div class="auto-merge-controls">
+                <label class="am-label">T_high <input id="auto_t_high" class="mini-input" style="width:62px;" value="${Number(p.t_high || 0.86)}" /></label>
+                <label class="am-label">T_low <input id="auto_t_low" class="mini-input" style="width:62px;" value="${Number(p.t_low || 0.70)}" /></label>
+                <label class="am-label"><input id="auto_writeback_excel" class="am-check" type="checkbox" ${p.writeback_excel ? "checked" : ""}/>写回Excel</label>
+                <label class="am-label"><input id="auto_apply_pending" class="am-check" type="checkbox" ${p.auto_apply_pending !== false ? "checked" : ""}/>全自动执行（含待确认）</label>
+                <label class="am-label">候选对筛选
+                  <select id="auto_pair_filter" class="badge-select" style="min-width: 92px; width: 92px;">
+                    <option value="all" ${pairFilter === "all" ? "selected" : ""}>全部</option>
+                    <option value="auto" ${pairFilter === "auto" ? "selected" : ""}>自动</option>
+                    <option value="pending" ${pairFilter === "pending" ? "selected" : ""}>待确认</option>
+                    <option value="reject" ${pairFilter === "reject" ? "selected" : ""}>拒绝</option>
+                  </select>
+                </label>
+                <label class="am-label">置信度
+                  <input id="auto_pair_conf_min" class="mini-input" style="width:58px;" value="${pairConfMin.toFixed(2)}" /> -
+                  <input id="auto_pair_conf_max" class="mini-input" style="width:58px;" value="${pairConfMax.toFixed(2)}" />
+                </label>
+                <button id="auto_preview_btn" class="mini">生成预演报告</button>
+                <button id="auto_run_btn" class="mini primary">一键自动执行</button>
+            </div>
+            <div class="hint" style="margin-top:6px;">最近自动执行：${lastApplied.length} 组；待确认：${pending.length} 组</div>
+            <div class="hint">已排除不合并：${blockedCount} 组 <button id="auto_clear_blocked" class="mini" style="height:24px; padding:0 8px;">清空排除</button></div>
+            <div id="auto_preview_report" style="margin-top:8px;"></div>
+            <div id="auto_run_report" style="margin-top:8px;"></div>
+            <div id="auto_pending_list" style="margin-top:10px;"></div>
+          </div>
+        `;
+        const reportBox = box.querySelector("#auto_preview_report");
+        if (reportBox) {
+          if (!report) {
+            reportBox.innerHTML = `<div class="hint">尚未生成预演报告。</div>`;
+          } else {
+            const autoEx = (report.auto_examples || []).map((g, idx) => {
+              const p0 = String(g?.primary || "");
+              const aliases = (g?.members || []).map((x) => String(x || "")).filter((x) => x && x !== p0);
+              const aliasTxt = aliases.length ? aliases.join("、") : "—";
+              const rowTxt = (g.member_rows || []).map((x) => `${x.food_name}[${(x.rows || []).join(",")}]`).join("；") || "—";
+              return `<div class="hint">自动：标准名=<b>${escapeHTML(p0)}</b>（${Number(g.confidence || 0).toFixed(2)}）｜别名=${escapeHTML(aliasTxt)}｜行：${escapeHTML(rowTxt)} <button class="mini" data-act="block_auto_example" data-idx="${idx}" style="height:22px; padding:0 8px;">删除</button></div>`;
+            }).join("");
+            const pendEx = (report.pending_examples || []).map((g, idx) => {
+              const p0 = String(g?.primary || "");
+              const aliases = (g?.members || []).map((x) => String(x || "")).filter((x) => x && x !== p0);
+              const aliasTxt = aliases.length ? aliases.join("、") : "—";
+              const rowTxt = (g.member_rows || []).map((x) => `${x.food_name}[${(x.rows || []).join(",")}]`).join("；") || "—";
+              return `<div class="hint">待确认：标准名=<b>${escapeHTML(p0)}</b>（${Number(g.confidence || 0).toFixed(2)}）｜别名=${escapeHTML(aliasTxt)}｜行：${escapeHTML(rowTxt)} <button class="mini" data-act="block_pending_example" data-idx="${idx}" style="height:22px; padding:0 8px;">删除</button></div>`;
+            }).join("");
+            const pairRows = (report.candidate_pairs_detail || []).filter((x) => {
+              const d = String(x?.decision || "");
+              const c = Number(x?.confidence || 0);
+              const passDecision = pairFilter === "all" ? true : d === pairFilter;
+              return passDecision && c >= pairConfMin && c <= pairConfMax;
+            }).map((x) => {
+              const a = escapeHTML(String(x?.a || ""));
+              const b = escapeHTML(String(x?.b || ""));
+              const h = Number(x?.heuristic || 0).toFixed(2);
+              const c = Number(x?.confidence || 0).toFixed(2);
+              const d0 = String(x?.decision || "");
+              const d = d0 === "auto" ? "自动" : (d0 === "pending" ? "待确认" : "拒绝");
+              const r = escapeHTML(String(x?.reason || ""));
+              return `<div class="hint">#${Number(x?.id || 0)}｜${a} ↔ ${b}｜heuristic=${h}｜conf=${c}｜${d}${r ? `｜${r}` : ""}</div>`;
+            }).join("");
+            reportBox.innerHTML = `
+              <div style="padding:8px; border:1px dashed var(--border-soft); border-radius:10px; background: rgba(255,255,255,0.72);">
+                <div><b>预演报告</b> <span class="hint">候选对 ${Number(report.candidate_pairs || 0)}，自动 ${Number(report.auto_count || 0)}，待确认 ${Number(report.pending_count || 0)}</span></div>
+                <div class="hint">阈值：T_high=${Number(report?.thresholds?.t_high || p.t_high).toFixed(2)}，T_low=${Number(report?.thresholds?.t_low || p.t_low).toFixed(2)}</div>
+                ${autoEx || ""}
+                ${pendEx || ""}
+                <div style="margin-top:6px;"><b>候选对明细</b></div>
+                <div style="max-height:260px; overflow:auto; border:1px solid var(--border-soft); border-radius:8px; padding:6px; background:#fff;">
+                  ${pairRows || '<div class="hint">暂无候选对明细。</div>'}
+                </div>
+              </div>`;
+          }
+        }
+        const list = box.querySelector("#auto_pending_list");
+        if (list) {
+          if (!pending.length) {
+            list.innerHTML = `<div class="hint">暂无待确认组。</div>`;
+          } else {
+            list.innerHTML = pending.map((g, idx) => {
+              const members = (g.members || []).slice(0, 6).join("、");
+              const more = (g.members || []).length > 6 ? ` 等${(g.members || []).length}个` : "";
+              return `
+                <div style="padding:8px; border:1px solid var(--border-soft); border-radius:10px; margin-bottom:8px; background: rgba(255,255,255,0.75);">
+                  <div><b>${escapeHTML(g.primary || "")}</b> <span class="hint">置信度 ${Number(g.confidence || 0).toFixed(2)}</span></div>
+                  <div class="hint">${escapeHTML(members)}${escapeHTML(more)}</div>
+                  <div style="margin-top:6px; display:flex; gap:8px;">
+                    <button class="mini" data-act="accept" data-idx="${idx}">接受合并</button>
+                    <button class="mini" data-act="reject" data-idx="${idx}">拒绝</button>
+                    <button class="mini" data-act="block_pending" data-idx="${idx}">删除</button>
+                  </div>
+                </div>`;
+            }).join("");
+          }
+        }
+        const runReportBox = box.querySelector("#auto_run_report");
+        if (runReportBox) {
+          if (!runReport) {
+            runReportBox.innerHTML = `<div class="hint">尚未执行自动合并。</div>`;
+          } else {
+            const counts = runReport.counts || {};
+            const appliedRows = (runReport.applied_groups || []).slice(0, 20).map((x) => {
+              const m = (x.members || []).slice(0, 6).join("、");
+              const more = (x.members || []).length > 6 ? ` 等${(x.members || []).length}个` : "";
+              const uc = Number(x?.units?.matched || 0);
+              const uf = Number(x?.units?.filled || 0);
+              const ns = String(x?.nutrition?.source || "");
+              const rowsTxt = Array.isArray(x?.row_ids) && x.row_ids.length ? x.row_ids.join(",") : "—";
+              const p0 = String(x?.primary || "");
+              const aliases = (x?.members || []).map((z) => String(z || "")).filter((z) => z && z !== p0);
+              const aliasTxt = aliases.length ? aliases.join("、") : "—";
+              return `<div class="hint">[成功] 标准名=${escapeHTML(p0)}${x.id ? `（${escapeHTML(x.id)}）` : ""}｜别名=${escapeHTML(aliasTxt)}｜成员：${escapeHTML(m)}${escapeHTML(more)}｜数据行：${escapeHTML(rowsTxt)}｜units 匹配/填充 ${uc}/${uf}｜nutrition: ${escapeHTML(ns || "—")}</div>`;
+            }).join("");
+            const failedRows = (runReport.failed_groups || []).slice(0, 20).map((x) =>
+              `<div class="hint">[失败] ${escapeHTML(x.primary || "")}｜原因：${escapeHTML(String(x.reason || "未知原因"))}</div>`
+            ).join("");
+            const pairRows = (runReport.candidate_pairs_detail || []).filter((x) => {
+              const d = String(x?.decision || "");
+              const c = Number(x?.confidence || 0);
+              const passDecision = pairFilter === "all" ? true : d === pairFilter;
+              return passDecision && c >= pairConfMin && c <= pairConfMax;
+            }).map((x) => {
+              const a = escapeHTML(String(x?.a || ""));
+              const b = escapeHTML(String(x?.b || ""));
+              const ar = Array.isArray(x?.a_rows) ? x.a_rows.join(",") : "";
+              const br = Array.isArray(x?.b_rows) ? x.b_rows.join(",") : "";
+              const h = Number(x?.heuristic || 0).toFixed(2);
+              const c = Number(x?.confidence || 0).toFixed(2);
+              const d0 = String(x?.decision || "");
+              const d = d0 === "auto" ? "自动" : (d0 === "pending" ? "待确认" : "拒绝");
+              const r = escapeHTML(String(x?.reason || ""));
+              return `<div class="hint">#${Number(x?.id || 0)}｜${a}[${escapeHTML(ar)}] ↔ ${b}[${escapeHTML(br)}]｜heuristic=${h}｜conf=${c}｜${d}${r ? `｜${r}` : ""}</div>`;
+            }).join("");
+            runReportBox.innerHTML = `
+              <div style="padding:8px; border:1px dashed var(--border-soft); border-radius:10px; background: rgba(255,255,255,0.72);">
+                <div><b>本次执行报告</b> <span class="hint">模式：${runReport.mode === "full_auto" ? "全自动（含待确认）" : "仅高置信自动"}</span></div>
+                <div class="hint">候选对 ${Number(runReport.candidate_pairs || 0)}；计划执行 ${Number(counts.planned_apply || 0)}；成功 ${Number(counts.applied || 0)}；失败 ${Number(counts.failed || 0)}</div>
+                <div class="hint">阈值：T_high=${Number(runReport?.thresholds?.t_high || p.t_high).toFixed(2)}，T_low=${Number(runReport?.thresholds?.t_low || p.t_low).toFixed(2)}</div>
+                ${appliedRows || '<div class="hint">暂无成功记录。</div>'}
+                ${failedRows || ""}
+                <div style="margin-top:6px;"><b>候选对明细</b></div>
+                <div style="max-height:260px; overflow:auto; border:1px solid var(--border-soft); border-radius:8px; padding:6px; background:#fff;">
+                  ${pairRows || '<div class="hint">暂无候选对明细。</div>'}
+                </div>
+              </div>`;
+          }
+        }
+
+        const clearBlockedBtn = box.querySelector("#auto_clear_blocked");
+        if (clearBlockedBtn) {
+          clearBlockedBtn.addEventListener("click", () => {
+            state.auto_merge.blocked_group_sigs = [];
+            saveMergeState(true);
+            renderAutoMergeBox();
+          });
+        }
+
+        const runBtn = box.querySelector("#auto_run_btn");
+        const pairFilterSel = box.querySelector("#auto_pair_filter");
+        const pairConfMinInp = box.querySelector("#auto_pair_conf_min");
+        const pairConfMaxInp = box.querySelector("#auto_pair_conf_max");
+        if (pairFilterSel) {
+          pairFilterSel.addEventListener("change", () => {
+            const th = Number(box.querySelector("#auto_t_high")?.value || 0.86);
+            const tl = Number(box.querySelector("#auto_t_low")?.value || 0.70);
+            const wb = !!box.querySelector("#auto_writeback_excel")?.checked;
+            const autoApplyPending = !!box.querySelector("#auto_apply_pending")?.checked;
+            const pairFilter2 = String(pairFilterSel.value || "all");
+            const cmin = Math.max(0, Math.min(1, Number(pairConfMinInp?.value ?? pairConfMin)));
+            const cmax = Math.max(0, Math.min(1, Number(pairConfMaxInp?.value ?? pairConfMax)));
+            state.auto_merge.params = { t_high: th, t_low: tl, writeback_excel: wb, auto_apply_pending: autoApplyPending, merge_by_id_only: true, pair_filter: pairFilter2, pair_conf_min: Math.min(cmin, cmax), pair_conf_max: Math.max(cmin, cmax) };
+            saveMergeState(false);
+            renderAutoMergeBox();
+          });
+        }
+        if (pairConfMinInp && pairConfMaxInp) {
+          const onConfChange = () => {
+            const th = Number(box.querySelector("#auto_t_high")?.value || 0.86);
+            const tl = Number(box.querySelector("#auto_t_low")?.value || 0.70);
+            const wb = !!box.querySelector("#auto_writeback_excel")?.checked;
+            const autoApplyPending = !!box.querySelector("#auto_apply_pending")?.checked;
+            const pairFilter2 = String(pairFilterSel?.value || "all");
+            const cmin = Math.max(0, Math.min(1, Number(pairConfMinInp.value)));
+            const cmax = Math.max(0, Math.min(1, Number(pairConfMaxInp.value)));
+            state.auto_merge.params = { t_high: th, t_low: tl, writeback_excel: wb, auto_apply_pending: autoApplyPending, merge_by_id_only: true, pair_filter: pairFilter2, pair_conf_min: Math.min(cmin, cmax), pair_conf_max: Math.max(cmin, cmax) };
+            saveMergeState(false);
+            renderAutoMergeBox();
+          };
+          pairConfMinInp.addEventListener("change", onConfChange);
+          pairConfMaxInp.addEventListener("change", onConfChange);
+        }
+        if (runBtn) {
+          runBtn.addEventListener("click", async () => {
+            try {
+              const th = Number(box.querySelector("#auto_t_high")?.value || 0.86);
+              const tl = Number(box.querySelector("#auto_t_low")?.value || 0.70);
+              const wb = !!box.querySelector("#auto_writeback_excel")?.checked;
+              const autoApplyPending = !!box.querySelector("#auto_apply_pending")?.checked;
+              const pairFilter2 = String(box.querySelector("#auto_pair_filter")?.value || "all");
+              const cmin = Math.max(0, Math.min(1, Number(box.querySelector("#auto_pair_conf_min")?.value ?? pairConfMin)));
+              const cmax = Math.max(0, Math.min(1, Number(box.querySelector("#auto_pair_conf_max")?.value ?? pairConfMax)));
+              state.auto_merge.params = { t_high: th, t_low: tl, writeback_excel: wb, auto_apply_pending: autoApplyPending, merge_by_id_only: true, pair_filter: pairFilter2, pair_conf_min: Math.min(cmin, cmax), pair_conf_max: Math.max(cmin, cmax) };
+              saveMergeState(false);
+              runBtn.disabled = true;
+              runBtn.textContent = "运行中...";
+              await runAutoMergeBatch();
+            } catch (e) {
+              setError(`自动合并失败：${String(e?.message || e)}`);
+            } finally {
+              runBtn.disabled = false;
+              runBtn.textContent = "运行自动合并";
+              renderAutoMergeBox();
+            }
+          });
+        }
+        const previewBtn = box.querySelector("#auto_preview_btn");
+        if (previewBtn) {
+          previewBtn.addEventListener("click", async () => {
+            try {
+              const th = Number(box.querySelector("#auto_t_high")?.value || 0.86);
+              const tl = Number(box.querySelector("#auto_t_low")?.value || 0.70);
+              const wb = !!box.querySelector("#auto_writeback_excel")?.checked;
+              const autoApplyPending = !!box.querySelector("#auto_apply_pending")?.checked;
+              const pairFilter2 = String(box.querySelector("#auto_pair_filter")?.value || "all");
+              const cmin = Math.max(0, Math.min(1, Number(box.querySelector("#auto_pair_conf_min")?.value ?? pairConfMin)));
+              const cmax = Math.max(0, Math.min(1, Number(box.querySelector("#auto_pair_conf_max")?.value ?? pairConfMax)));
+              state.auto_merge.params = { t_high: th, t_low: tl, writeback_excel: wb, auto_apply_pending: autoApplyPending, merge_by_id_only: true, pair_filter: pairFilter2, pair_conf_min: Math.min(cmin, cmax), pair_conf_max: Math.max(cmin, cmax) };
+              saveMergeState(false);
+              previewBtn.disabled = true;
+              previewBtn.textContent = "生成中...";
+              await runAutoMergePreview();
+              renderAutoMergeBox();
+              setError("预演报告已生成（未执行实际合并）。");
+            } catch (e) {
+              setError(`预演失败：${String(e?.message || e)}`);
+            } finally {
+              previewBtn.disabled = false;
+              previewBtn.textContent = "生成预演报告";
+            }
+          });
+        }
+
+        for (const b of Array.from(box.querySelectorAll("button[data-act]"))) {
+          b.addEventListener("click", async () => {
+            const idx = Number(b.getAttribute("data-idx"));
+            const act = b.getAttribute("data-act");
+            const blockGroup = (gg) => {
+              const sig = groupSignature(gg);
+              if (!sig) return;
+              const s = new Set((state.auto_merge.blocked_group_sigs || []).map((x) => String(x || "")));
+              s.add(sig);
+              state.auto_merge.blocked_group_sigs = Array.from(s);
+              saveMergeState(true);
+              renderAutoMergeBox();
+            };
+            if (act === "block_auto_example") {
+              const gg = (state.auto_merge?.preview_report?.auto_examples || [])[idx];
+              if (gg) blockGroup(gg);
+              return;
+            }
+            if (act === "block_pending_example") {
+              const gg = (state.auto_merge?.preview_report?.pending_examples || [])[idx];
+              if (gg) blockGroup(gg);
+              return;
+            }
+            const g = state.auto_merge.pending[idx];
+            if (!g) return;
+            if (act === "block_pending") {
+              blockGroup(g);
+              state.auto_merge.pending.splice(idx, 1);
+              saveMergeState(true);
+              renderAutoMergeBox();
+              return;
+            }
+            if (act === "reject") {
+              state.auto_merge.pending.splice(idx, 1);
+              saveMergeState(true);
+              renderAutoMergeBox();
+              return;
+            }
+            try {
+              b.disabled = true;
+              const rr = await applyAutoGroupByNames(g, !!state.auto_merge?.params?.writeback_excel);
+              if (rr?.ok) {
+                state.auto_merge.pending.splice(idx, 1);
+                saveMergeState(true);
+                await refreshAll();
+              } else {
+                setError(`接受失败：${String(rr?.reason || "未知原因")}`);
+              }
+            } catch (e) {
+              setError(`接受失败：${String(e?.message || e)}`);
+            } finally {
+              renderAutoMergeBox();
+            }
+          });
+        }
+      }
+
+      function bind() {
+        // OR toggle
+        const orToggle = $("orToggle");
+        if (orToggle) {
+          orToggle.checked = state.q_mode === "or";
+          orToggle.addEventListener("change", async () => {
+            state.q_mode = orToggle.checked ? "or" : "and";
+            state.sheets.map.offset = 0;
+            state.sheets.cns.offset = 0;
+            state.foods_view.offset = 0;
+            saveMergeState(true);
+            await refreshAll();
+          });
+        }
+
+        $("qInput").addEventListener("keydown", async (e) => {
+          if (e.key === "Enter") {
+            state.q = e.target.value.trim();
+            state.sheets.map.offset = 0;
+            state.sheets.cns.offset = 0;
+            state.foods_view.offset = 0;
+            await refreshAll();
+          }
+        });
+        $("refreshBtn").addEventListener("click", async () => {
+          state.q = $("qInput").value.trim();
+          state.sheets.map.offset = 0;
+          state.sheets.cns.offset = 0;
+          state.foods_view.offset = 0;
+          await refreshAll();
+        });
+
+        // undo
+        const u1 = $("undo1Btn");
+        const u3 = $("undo3Btn");
+        if (u1) u1.addEventListener("click", async () => { await undoSteps(1); });
+        if (u3) u3.addEventListener("click", async () => { await undoSteps(3); });
+
+        // limits
+        $("limit_map").addEventListener("change", async (e) => {
+          const v = Number(e.target.value);
+          state.foods_view.limit = v;
+          state.foods_view.offset = 0;
+          renderResultTable();
+        });
+        $("limit_cns").addEventListener("change", async (e) => {
+          state.sheets.cns.limit = Number(e.target.value);
+          state.sheets.cns.offset = 0;
+          await loadSheetKey("cns");
+        });
+
+        // pagination
+        $("prev_map").addEventListener("click", async () => {
+          const s = state.foods_view;
+          s.offset = Math.max(0, s.offset - s.limit);
+          renderResultTable();
+        });
+        $("next_map").addEventListener("click", async () => {
+          const s = state.foods_view;
+          const next = s.offset + s.limit;
+          if (next >= s.total) return;
+          s.offset = next;
+          renderResultTable();
+        });
+        $("prev_cns").addEventListener("click", async () => {
+          const s = state.sheets.cns;
+          s.offset = Math.max(0, s.offset - s.limit);
+          await loadSheetKey("cns");
+        });
+        $("next_cns").addEventListener("click", async () => {
+          const s = state.sheets.cns;
+          const next = s.offset + s.limit;
+          if (next >= s.total) return;
+          s.offset = next;
+          await loadSheetKey("cns");
+        });
+
+        // cns actions
+        $("cnsClearBtn").addEventListener("click", () => {
+          state.selection_cns.clear();
+          renderCNSTable(state.sheets.cns.columns, state.sheets.cns.rows);
+        });
+        $("cnsUpdateBtn").addEventListener("click", () => {
+          const selected = Array.from(state.selection_cns);
+          if (selected.length !== 1) {
+            setError('请在“中国营养学会参考数据”表勾选 1 行（只支持单条写入）。');
+            return;
+          }
+          const targetFood = normText(state.active_food_name);
+          if (!targetFood) {
+            setError('请先在上方“食物库（合并总表）”点击要写入的那条 id（food_name）。');
+            return;
+          }
+          const prevRaw = localStorage.getItem(LS_KEY);
+          const rows = state.sheets.cns.rows || [];
+          const nonNumericCols = new Set(["food_id", "食物名称", "detail_url", "category_one", "category_two", "raw_len", "_row"]);
+          let updated = 0;
+          let pickedFilled = null;
+          for (const r of rows) {
+            const rr = Number(r._row);
+            if (!state.selection_cns.has(rr)) continue;
+            const filled = { ...r };
+            // 与 CNS 表格展示保持一致：数值列空值按 0 处理后再写入/提取
+            for (const [k, v] of Object.entries(filled)) {
+              if (nonNumericCols.has(k)) continue;
+              if (v === null || v === undefined || v === "") filled[k] = 0;
+            }
+            const nut = extractNutrition(filled) || {};
+            state.nutrition_overrides[targetFood] = nut;
+            pickedFilled = filled;
+            updated += 1;
+          }
+
+          if (!pickedFilled) {
+            setError("未找到勾选的 CNS 行。");
+            return;
+          }
+
+          // 写回 Excel 前先做一次备份：撤回时可以还原 Excel
+          fetchJSON("/api/workbook/backup", { method: "POST" })
+            .then((bk) => {
+              const backup_id = String(bk?.backup_id || "");
+
+              // 保存前端覆盖（不 pushUndo；我们用 complex undo 合并成一步）
+              saveMergeState(false);
+
+              // 写回 Excel：写入“你点击的那条 food_name”
+              return fetch("/api/nutrition/bulk_update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ target_food_name: targetFood, row: pickedFilled }),
+              })
+                .then(async (r) => {
+                  if (!r.ok) throw new Error(await r.text());
+                  return await r.json();
+                })
+                .then((res) => ({ res, backup_id }));
+            })
+            .then(async (r) => {
+              return r;
+            })
+            .then(({ res, backup_id }) => {
+              // 清理前端 nutrition_cache，确保重新拉取到最新
+              if (targetFood && state.nutrition_cache) delete state.nutrition_cache[targetFood];
+              // 记录“撤回一步”即可同时回滚：Excel + 前端状态
+              if (prevRaw) _pushUndoEntry(`__COMPLEX__:${JSON.stringify({ state: prevRaw, excel_backup_id: backup_id })}`);
+              setError(
+                updated
+                  ? `已更新 nutrition：${updated} 条（已写入Excel：updated=${res.updated}, created=${res.created}）`
+                  : "未更新到任何 nutrition。"
+              );
+              renderResultTable();
+            })
+            .catch((e) => {
+              // 后端写入失败时：仍保留前端覆盖（不丢你的操作）
+              saveMergeState(false);
+              setError(`nutrition 已在前端更新，但写回Excel失败：${String(e?.message || e)}`);
+              renderResultTable();
+            });
+        });
+
+        // merge actions
+        $("mergeBtn").addEventListener("click", async () => {
+          const names = Array.from(state.selection_foods);
+          if (!names.length) {
+            setError("请先在合并结果表勾选要合并的食物（按 food_name）。");
+            return;
+          }
+          // 拉取这些 food_name 的原始行，用于合并
+          const all = [];
+          for (const n of names) {
+            const qs = encodeQS({ sheet: SHEETS.map, q: n, offset: 0, limit: 500 });
+            const data = await fetchJSON(`/api/sheet?${qs}`);
+            for (const r of (data.rows || [])) {
+              if (normText(r.food_name) === normText(n)) all.push(r);
+            }
+          }
+          if (!all.length) {
+            setError("未找到可合并的原始行（请确认 food_name 是否存在）。");
+            return;
+          }
+          openMergeModalWithRows(all);
+        });
+
+        function resetFoodsToOriginal(names) {
+          // 重要：如果某个 food 被隐藏（被合并进别的 food），用户在结果表里可能勾不到它。
+          // 所以“还原”必须能从选中的 primary 推导出整组涉及的 food_name，一起解除隐藏/删除合并组。
+          const targetSet = new Set((names || []).map((x) => normText(x)).filter(Boolean));
+          if (!targetSet.size) return 0;
+
+          // push undo snapshot once
+          saveMergeState(true);
+
+          // expand targets by groups whose primary is selected
+          for (const g of (state.merge.groups || [])) {
+            if (!g) continue;
+            const primary = normText(g.primary);
+            if (!targetSet.has(primary)) continue;
+            const src = Array.isArray(g.source_rows) ? g.source_rows : [];
+            for (const r of src) {
+              const fn = normText(r?.food_name);
+              if (fn) targetSet.add(fn);
+            }
+            for (const a of (g.aliases || [])) {
+              const aa = normText(a);
+              if (aa) targetSet.add(aa);
+            }
+          }
+
+          // 1) 取消隐藏
+          for (const n of targetSet) state.hidden_foods.delete(n);
+
+          // 2) 清理 nutrition overrides（仅前端覆盖）
+          for (const n of targetSet) {
+            if (state.nutrition_overrides && Object.prototype.hasOwnProperty.call(state.nutrition_overrides, n)) {
+              delete state.nutrition_overrides[n];
+            }
+            if (state.nutrition_cache && Object.prototype.hasOwnProperty.call(state.nutrition_cache, n)) {
+              delete state.nutrition_cache[n];
+            }
+          }
+
+          // 3) 从合并组里剔除这些 food（如果它们是 primary：直接删组；如果是被合并进去：从 source_rows/row_ids/aliases 移除）
+          const newGroups = [];
+          for (const g of (state.merge.groups || [])) {
+            if (!g) continue;
+            const primary = normText(g.primary);
+            if (targetSet.has(primary)) {
+              // primary 本身还原：删除整个合并组
+              continue;
+            }
+            const src = Array.isArray(g.source_rows) ? g.source_rows : [];
+            const keptSrc = src.filter((r) => !targetSet.has(normText(r.food_name)));
+            const keptRowIds = (g.row_ids || []).filter((rid) => {
+              const r = src.find((x) => Number(x?._row) === Number(rid));
+              if (!r) return true;
+              return !targetSet.has(normText(r.food_name));
+            });
+
+            // aliases：移除目标名字（避免仍显示在 all_names）
+            const keptAliases = (g.aliases || []).filter((a) => !targetSet.has(normText(a)));
+
+            // 若源行都没了：丢弃该组
+            if (!keptSrc.length && !keptRowIds.length) continue;
+
+            newGroups.push({
+              ...g,
+              source_rows: keptSrc,
+              row_ids: keptRowIds,
+              aliases: keptAliases,
+            });
+          }
+          state.merge.groups = newGroups;
+
+          // 4) 清空本次勾选
+          state.selection_foods.clear();
+          // 如果 active_food 也在还原集合里，清掉
+          if (targetSet.has(normText(state.active_food_name))) state.active_food_name = "";
+
+          saveMergeState(false);
+          return targetSet.size;
+        }
+
+        $("resetBtn").addEventListener("click", async () => {
+          const names = Array.from(state.selection_foods);
+          if (!names.length) {
+            const raw = window.prompt("请输入要还原的 food_name（空格/逗号/顿号分隔）：", "");
+            const manual = splitNameList(raw || "");
+            if (!manual.length) {
+              setError("请先勾选，或输入要还原的 food_name。");
+              return;
+            }
+            const n = resetFoodsToOriginal(manual);
+            setError(`已还原：${n} 条（回到未合并/未隐藏/未覆盖 nutrition）`);
+            await refreshAll();
+            return;
+          }
+          const n = resetFoodsToOriginal(names);
+          setError(`已还原：${n} 条（回到未合并/未隐藏/未覆盖 nutrition）`);
+          await refreshAll();
+        });
+
+        $("resetByNameBtn").addEventListener("click", async () => {
+          const raw = window.prompt("请输入要还原的 food_name（空格/逗号/顿号分隔）：", "肉烧卖 咸肉烧卖 鲜肉糯米烧卖");
+          const manual = splitNameList(raw || "");
+          if (!manual.length) return;
+          const n = resetFoodsToOriginal(manual);
+          setError(`已还原：${n} 条（回到未合并/未隐藏/未覆盖 nutrition）`);
+          await refreshAll();
+        });
+        $("clearSelBtn").addEventListener("click", () => {
+          state.selection_foods.clear();
+          renderResultTable();
+        });
+
+        // view (only result)
+        $("view_result").addEventListener("click", () => setViewModeResult());
+        $("autoMergeRunBtn").addEventListener("click", async () => {
+          const btn = $("autoMergeRunBtn");
+          try {
+            setViewModeResult();
+            renderAutoMergeBox();
+            try { $("autoMergeBox")?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch {}
+            btn.disabled = true;
+            btn.textContent = "自动执行中...";
+            await runAutoMergeBatch();
+          } catch (e) {
+            setError(`自动合并失败：${String(e?.message || e)}`);
+          } finally {
+            btn.disabled = false;
+            btn.textContent = "自动合并";
+            renderAutoMergeBox();
+          }
+        });
+
+        // filter modal
+        $("filterBtn").addEventListener("click", () => {
+          setViewModeResult();
+          $("filter_status").value = state.filters.status || "";
+          $("filter_source").value = state.filters.source || "";
+          $("filter_version").value = state.filters.version || "";
+          $("filterModalBackdrop").style.display = "flex";
+        });
+        $("filter_cancel").addEventListener("click", () => {
+          $("filterModalBackdrop").style.display = "none";
+        });
+        $("filter_clear").addEventListener("click", () => {
+          state.filters = { status: "", source: "", version: "" };
+          $("filter_status").value = "";
+          $("filter_source").value = "";
+          $("filter_version").value = "";
+          state.foods_view.offset = 0;
+          saveMergeState(true);
+          updateFilterBtnUI();
+          renderResultTable();
+        });
+        $("filter_apply").addEventListener("click", () => {
+          state.filters = {
+            status: $("filter_status").value || "",
+            source: $("filter_source").value || "",
+            version: $("filter_version").value || "",
+          };
+          state.foods_view.offset = 0;
+          saveMergeState(true);
+          updateFilterBtnUI();
+          $("filterModalBackdrop").style.display = "none";
+          renderResultTable();
+        });
+        $("filterModalBackdrop").addEventListener("click", (e) => {
+          if (e.target && e.target.id === "filterModalBackdrop") $("filterModalBackdrop").style.display = "none";
+        });
+
+        // modal buttons
+        $("modal_cancel").addEventListener("click", () => closeMergeModal());
+        $("modal_ok").addEventListener("click", () => confirmMerge());
+        $("mergeModalBackdrop").addEventListener("click", (e) => {
+          if (e.target && e.target.id === "mergeModalBackdrop") closeMergeModal();
+        });
+
+        // merge modal units actions
+        $("modal_units_add").addEventListener("click", () => {
+          const unitsObj = state._tmp_units || (state._tmp_units = {});
+          let base = "新单位";
+          let name = base;
+          let i = 1;
+          while (unitsObj[name]) {
+            i += 1;
+            name = `${base}${i}`;
+          }
+          unitsObj[name] = { unit: name, unit_aliases: [], unit_to_g: null };
+          renderModalUnits(unitsObj);
+        });
+        $("modal_units_fill").addEventListener("click", () => {
+          const unitsObj = state._tmp_units || {};
+          for (const u of Object.values(unitsObj)) {
+            if (u.unit_to_g === null || u.unit_to_g === undefined || u.unit_to_g === "") {
+              const s = suggestToG(u.unit);
+              if (s !== null) u.unit_to_g = s;
+            }
+          }
+          renderModalUnits(unitsObj);
+        });
+
+        // export final (pick versions)
+        $("exportFinalBtn").addEventListener("click", () => {
+          openExportModal().catch((e) => setError(`打开导出选择失败：${String(e?.message || e)}`));
+        });
+        $("export_cancel").addEventListener("click", () => closeExportModal());
+        $("exportModalBackdrop").addEventListener("click", (e) => {
+          if (e.target && e.target.id === "exportModalBackdrop") closeExportModal();
+        });
+        $("export_ver_all").addEventListener("click", () => {
+          for (const cb of Array.from($("export_ver_list")?.querySelectorAll("input[type='checkbox']") || [])) cb.checked = true;
+        });
+        $("export_ver_clear").addEventListener("click", () => {
+          for (const cb of Array.from($("export_ver_list")?.querySelectorAll("input[type='checkbox']") || [])) cb.checked = false;
+        });
+        $("export_apply").addEventListener("click", () => {
+          const selected = collectSelectedExportVersions();
+          if (!selected.size) {
+            setError("请至少选择一个版本再导出。");
+            return;
+          }
+          closeExportModal();
+          exportFinalJSONL(selected);
+        });
+      }
+
+      (async () => {
+        try {
+          bind();
+          await loadWorkbook();
+          await refreshAll();
+          setViewModeResult();
+        } catch (e) {
+          setError(String(e?.message || e));
+        }
+      })();
+    </script>
+  </body>
+</html>
+
+
+
